@@ -24,8 +24,8 @@
 #include <chrono>
 #include <cstdlib>
 #include <cublas_v2.h>
-// #include <cuda_runtime.h>
-#include <format>
+#include <cuda_runtime.h>
+// #include <format>
 #include <fstream>
 #include <iostream>
 #include <utility>

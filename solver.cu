@@ -24,7 +24,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cublas_v2.h>
-#include <cuda_runtime.h>
+// #include <cuda_runtime.h>
 #include <format>
 #include <fstream>
 #include <iostream>
@@ -85,7 +85,7 @@ template<typename T>
 void cuda_malloc_host_impl(T** ptr, int n, const char* name) {
 	cudaError_t err = cudaMallocHost((void**)ptr, n * sizeof(T));
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMallocHost failed for {}: {}\n", name, cudaGetErrorString(err));
+		// std::cerr << std::format("cudaMallocHost failed for {}: {}\n", name, cudaGetErrorString(err));
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -94,7 +94,7 @@ template <typename T>
 void cuda_malloc_impl(T** d_ptr, int n, const char* name) {
 	cudaError_t err = cudaMalloc((void**)d_ptr, n * sizeof(T));
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMalloc failed for {}: {}\n", name, cudaGetErrorString(err));
+		// std::cerr << std::format("cudaMalloc failed for {}: {}\n", name, cudaGetErrorString(err));
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -103,7 +103,7 @@ template <typename T>
 void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const char* name) {
 	cudaError_t err = cudaMemcpy((void*)dst, (void*)src, size * sizeof(T), kind);
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMemcpy failed for {}: {}\n", name, cudaGetErrorString(err));
+		// std::cerr << std::format("cudaMemcpy failed for {}: {}\n", name, cudaGetErrorString(err));
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -113,7 +113,7 @@ void load_array_impl(std::ifstream& file, T* a, int m, int n, const char* name) 
 	for (int i = 0; i < m; ++i) {
 		for (int j = 0; j < n; ++j) {
 			if (!(file >> a[R2C(i, j, m)])) {
-				std::cerr <<std::format("Failed to read ({},{}) for {}\n", i, j, name);
+				// std::cerr <<std::format("Failed to read ({},{}) for {}\n", i, j, name);
 				std::exit(EXIT_FAILURE);
 			}
 		}

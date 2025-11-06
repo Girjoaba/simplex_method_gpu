@@ -28,6 +28,10 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <thrust/device_vector.h>
+#include <thrust/extrema.h>
+#include <thrust/fill.h>
+#include <thrust/reduce.h>
 #include <utility>
 
 using Clock = std::chrono::high_resolution_clock;
@@ -210,6 +214,18 @@ __global__ void compute_new_E(real* E, real* alpha, int m, int q, real alpha_q)
         E[R2C(i, q, m)] = (i != q) ? (-alpha[i] / alpha_q) : (1 / alpha_q); // explosion?
 }
 
+__global__ void fill_alpha(real* d_alpha, real* d_alpha_q, int m, int q)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    if (j < m) {
+        if (j == q) {
+            d_alpha[j] = 1.0 / d_alpha_q[0] - 1.0;
+        } else {
+            d_alpha[j] /= -d_alpha_q[0];
+        }
+    }
+}
+
 void print_matrix(real* A, int m, int n, const char* msg = "")
 {
     // copy to host
@@ -298,9 +314,11 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
     real *d_A_p, *d_alpha, *d_theta;
     real *d_alpha_q, *d_E, *d_new_B_inv;
     real *d_next, *d_curr;
+    real* d_B_q;
     int* d_b_ixs;
     int *d_theta_flags, *d_alpha_num_non_pos;
     int* d_ix;
+    real one = 1.0f;
 
     int blocks_for_n = num_blocks_1D(n);
     int blocks_for_m = num_blocks_1D(m);
@@ -312,7 +330,7 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
         { d_c_b, m }, { d_x_b, n }, { d_y, m }, { d_y_aug, m + 1 },
         { d_D, (m + 1) * n }, { d_e, n }, { d_A_p, m }, { d_alpha, m },
         { d_theta, m }, { d_alpha_q, 1 }, { d_E, m * m }, { d_new_B_inv, m * m },
-        { d_next, blocks_for_n }, { d_curr, n }
+        { d_next, blocks_for_n }, { d_curr, n }, { d_B_q, m }
     };
 
     PtrAlloc<int> int_allocs[] = {
@@ -403,28 +421,34 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
         print_matrix(d_x_b, m, 1, "x_b before theta:"); // debug
         print_matrix(d_theta, m, 1, "theta:"); // debug
         q = get_min_ix(d_theta, m, blocks_for_m, nullptr, d_curr, d_next, d_ix);
-        std::cout << "Leaving var index: " << q << '\n';
+
+        cudaMemcpy(d_alpha_q, d_alpha + q, sizeof(real), cudaMemcpyDeviceToDevice);
+
+        std::cout << "Leaving var index: " << q << std::endl;
+        // flush
         t.lv_end = Clock::now();
 
         // ============ Update the basis ============
 
         t.B_start = Clock::now();
-        if (compute_E(d_E, d_alpha, m, blocks_for_m, q, d_alpha_q)) {
-            status = SolveStatus::ThetaOverflow;
-            break;
-        }
-        print_matrix(d_E, m, m, "E:"); // debug
-        // new_B_inv = E * B_inv
-        cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-            m, m, m, &alpha, d_E, m, d_B_inv, m, &beta, d_new_B_inv, m);
-        std::swap(d_B_inv, d_new_B_inv);
-		print_matrix(d_B_inv, m, m, "B_inv after update:"); // debug
+        fill_alpha<<<blocks_for_m, BS_1D>>>(d_alpha, d_alpha_q, m, q);
+        print_matrix(d_alpha, m, 1, "alpha after fill:"); // debug
+
+        cublasScopy(handle, m, d_B_inv + q, m, d_B_q, 1); // copy the q-th row of B_inv to d_B_q
+
+        print_matrix(d_B_q, 1, m, "B_q:"); // debug        
+
+        cublasSger(handle, m, m, &one, d_alpha, 1, d_B_q, 1, d_B_inv, m);
+        
+        print_matrix(d_B_inv, m, m, "B_inv after rank-1 update:"); // debug
+
         t.B_end = Clock::now();
 
         // ======= Update the cost, indices and solution =======
 
         cudaMemcpy(d_c_b + q, d_c + p, sizeof(real), cudaMemcpyDeviceToDevice);
         cudaMemcpy(d_b_ixs + q, &p, sizeof(int), cudaMemcpyHostToDevice);
+        // Update x_b
         // x_b = B_inv * b
         cublasSgemv(handle, CUBLAS_OP_N,
             m, m, &alpha, d_B_inv, m, d_b, 1, &beta, d_x_b, 1);

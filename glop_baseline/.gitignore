@@ -1,0 +1,60 @@
+# Build directory
+build/
+Build/
+BUILD/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+*.cmake
+
+# Compiled binaries
+glop_main
+glop_test
+glop_benchmark
+*.exe
+*.out
+*.app
+
+# Libraries
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+
+# Object files
+*.o
+*.obj
+*.lo
+*.slo
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Dependencies fetched by CMake
+_deps/
+
+# Build logs
+*.log
+build.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb

@@ -6,7 +6,7 @@
 
 Explanation:
 
-Starts with n m
+Starts with m n
 Followed by A
 Followed by b
 Followed by c

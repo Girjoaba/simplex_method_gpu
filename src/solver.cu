@@ -287,7 +287,7 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 
 	real *d_A, *d_b, *d_c;
 	real *d_B_inv, *d_c_b, *d_x_b;
-	real *d_y, *d_y_aug, *d_D, *d_e;
+	real *d_y_aug, *d_D, *d_e;
 	real *d_A_p, *d_alpha, *d_theta;
 	real *d_alpha_q, *d_E, *d_new_B_inv;
 	real *d_next, *d_curr;
@@ -302,7 +302,7 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 
 	PtrAlloc<real> real_allocs[] = {
 		{d_A, m * n}, {d_b, m}, {d_c, n}, {d_B_inv, m * m},
-		{d_c_b, m}, {d_x_b, n}, {d_y, m}, {d_y_aug, m + 1},
+		{d_c_b, m}, {d_x_b, n}, {d_y_aug, m + 1},
 		{d_D, (m + 1) * n}, {d_e, n}, {d_A_p, m}, {d_alpha, m},
 		{d_theta, m}, {d_alpha_q, 1}, {d_E, m * m}, {d_new_B_inv, m * m},  
 		{d_next, blocks_for_n}, {d_curr, n}

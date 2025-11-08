@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdlib>
+#include <cub/cub.cuh>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #include <format>
@@ -8,9 +9,9 @@
 #include <iostream>
 #include <utility>
 
+using real = float;
 using Clock = std::chrono::high_resolution_clock;
 using TimePoint = std::chrono::time_point<Clock>;
-using real = float;
 
 constexpr int BS_1D = 256;
 constexpr int BS_2D = 16;
@@ -32,17 +33,17 @@ struct PtrAlloc {
 	int size;
 };
 
-struct TimePoints {
-	TimePoint start, end;
-	TimePoint file_read_end, file_read_start;
-	TimePoint host_alloc_start, host_alloc_end;
-	TimePoint ev_start, ev_end;
-	TimePoint lv_start, lv_end;
-	TimePoint B_start, B_end;
-	TimePoint alloc_start, alloc_end;
+struct TimeStruct {
+	TimePoint start, host_alloc_start, file_read_start, solve_start;
+	TimePoint alloc_start, init_start, init_end;
+	TimePoint y_start, p_start, B_inv_start, x_b_start;
 	TimePoint dealloc_start, dealloc_end;
-	TimePoint init_start, init_end;
-	TimePoint blas_end;
+	TimePoint print_result_start, host_free_start, end;
+
+	double y_duration = 0.0;
+  double p_duration = 0.0;
+  double B_inv_duration = 0.0;
+  double x_b_duration = 0.0;
 };
 
 enum class SolveStatus {
@@ -147,13 +148,20 @@ void print_endline() {
 	std::cout << std::endl;
 }
 
-inline void print_elapsed_time(const char *msg, const TimePoint& start, const TimePoint& end) {
+void print_elapsed_time(const char *msg, double dur) {
 	auto label = std::string(msg) + ": ";
-	double duration = std::chrono::duration<double>(end - start).count();
 
 	std::cout << std::setw(19) << label;
 	std::cout << std::fixed << std::setprecision(2);
-	std::cout << std::setw(6) << duration << '\n';
+	std::cout << std::setw(6) << dur << '\n';
+}
+
+inline double duration(const TimePoint& start, const TimePoint& end) {
+	return std::chrono::duration<double>(end - start).count();
+}
+
+inline void print_elapsed_time(const char *msg, const TimePoint& start, const TimePoint& end) {
+	print_elapsed_time(msg, duration(start, end));
 }
 
 /* ===================== KERNELS ===================== */
@@ -184,29 +192,8 @@ __global__ void init_b_ixs(int* b_ixs, int m, int n) {
 	if (j < m) b_ixs[j] = n - m + j;
 }
 
-__global__ void reduce_min(real* vec, int n, real* mins) {
-	int tid = threadIdx.x;
-	int j = blockIdx.x * blockDim.x + tid;
-
-	__shared__ real sf[BS_1D];
-	sf[tid] = j < n ? vec[j] : INFINITY;
-	__syncthreads();
-
-	for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-		if (tid < s)
-			sf[tid] = sf[tid] > sf[tid + s] ? sf[tid + s] : sf[tid];
-		__syncthreads();
-	}
-	
-	if (tid == 0) mins[blockIdx.x] = sf[0];
-}
-
-__global__ void get_ix(real* vec, int n, int* ix, real* val) {
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	real v = *val;
-
-	if (j < n && vec[j] == v)
-		atomicCAS(ix, -1, j);
+__global__ void compute_scalar(real* c_p, real* c_b_q, real* scalar) {
+	scalar[0] += c_p[0] - c_b_q[0];
 }
 
 __global__ void compute_theta(real* x_b, real* alpha, real* theta, int* flags, int m, int* num_non_pos) {
@@ -220,80 +207,35 @@ __global__ void compute_theta(real* x_b, real* alpha, real* theta, int* flags, i
 	}
 }
 
-__global__ void compute_new_E(real* E, real* alpha, int m, int q, real alpha_q) {
+__global__ void compute_E_q(real* E_q, real* alpha, real* alpha_q, int q, int m) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (i < m)
-		E[R2C(i, q, m)] = (i != q) ? (-alpha[i] / alpha_q) : (1 / alpha_q);	// explosion?
-}
-
-/* ===================== WRAPPERS ===================== */
-
-int get_min_ix(real* d_vec, int n, int blocks_for_n, real* val, real* d_curr, real* d_next, int* d_ix) {
-	cudaMemcpy(d_curr, d_vec, n * sizeof(real), cudaMemcpyDeviceToDevice);
-
-	int size = n;
-	while (size > 1) {
-		reduce_min<<<blocks_for_n, BS_1D>>>(d_curr, size, d_next);
-		size = blocks_for_n;
-		blocks_for_n = num_blocks_1D(blocks_for_n);
-		std::swap(d_curr, d_next);
-	}
-	
-	blocks_for_n = num_blocks_1D(n);
-	cudaMemset(d_ix, -1, sizeof(int));	// works only for 0 and -1
-	get_ix<<<blocks_for_n, BS_1D>>>(d_vec, n, d_ix, d_curr);
-
-	int min_ix;
-	cudaMemcpy(&min_ix, d_ix, sizeof(int), cudaMemcpyDeviceToHost);
-	if (val != nullptr)
-		cudaMemcpy(val, d_curr, sizeof(real), cudaMemcpyDeviceToHost);
-		
-	return min_ix;
-}
-
-inline int entering_var(real* d_e, int n, int blocks_for_n, real* d_curr, real* d_next, int* d_ix) {
-	real min_val;
-	int min_ix = get_min_ix(d_e, n, blocks_for_n, &min_val, d_curr, d_next, d_ix);
-	return (min_val >= -EPS) ? -1 : min_ix;	// squeezing zeros is pointless
-}
-
-int compute_E(real* d_E, real* d_alpha, int m, int blocks_for_m, int q, real* d_alpha_q) {
-	real alpha_q;	
-	cudaMemcpy(&alpha_q, d_alpha + q, sizeof(real), cudaMemcpyDeviceToHost);
-
-	/*
-		If alpha_q <= 0, then min_theta = INF. Moreover, since we are here,
-		there were positive alpha_t, thus the division exploded for all of them.
-		Luckily, we can still find min_theta using log-tricks, if we want to.
-	*/
-
-	if (alpha_q <= 0) return 1;
-
-	init_I<<<dim3(blocks_for_m, blocks_for_m), dim3(BS_2D, BS_2D)>>>(d_E, m);
-	compute_new_E<<<blocks_for_m, BS_1D>>>(d_E, d_alpha, m, q, alpha_q);
-
-	return 0;
+		E_q[i] = (i != q) ? (-alpha[i] / alpha_q[0]) : (1.0 / alpha_q[0] - 1.0);
 }
 
 /* ===================== SOLVER ===================== */
 
-std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_ixs, int m, int n, TimePoints& t) {
+std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_ixs, int m, int n, TimeStruct& t) {
 	cublasHandle_t handle;
 	if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
 		std::cerr << "cublasCreate failed.\n";
 		std::exit(EXIT_FAILURE);
 	}
+	cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE);
 
 	real *d_A, *d_b, *d_c;
-	real *d_B_inv, *d_c_b, *d_x_b;
-	real *d_y_aug, *d_D, *d_e;
-	real *d_A_p, *d_alpha, *d_theta;
-	real *d_alpha_q, *d_E, *d_new_B_inv;
-	real *d_next, *d_curr;
+	real *d_B_inv, *d_c_b, *d_c_b_q, *d_x_b;
+	real *d_scalar, *d_y_aug, *d_D, *d_e;
+	real *d_alpha, *d_theta;
+	real *d_alpha_q, *d_B_inv_q, *d_E_q;
 	int *d_b_ixs;
 	int *d_theta_flags, *d_alpha_num_non_pos;
-	int *d_ix;
+
+	real min_val, *d_min_val;
+	int *d_min_ix;
+  void *d_cub_tmp = nullptr;
+  size_t cub_tmp_bytes = 0;
 
 	int blocks_for_n = num_blocks_1D(n);
 	int blocks_for_m = num_blocks_1D(m);
@@ -301,15 +243,14 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	const real one = 1.0f, zero = 0.0f;
 
 	PtrAlloc<real> real_allocs[] = {
-		{d_A, m * n}, {d_b, m}, {d_c, n}, {d_B_inv, m * m},
-		{d_c_b, m}, {d_x_b, n}, {d_y_aug, m + 1},
-		{d_D, (m + 1) * n}, {d_e, n}, {d_A_p, m}, {d_alpha, m},
-		{d_theta, m}, {d_alpha_q, 1}, {d_E, m * m}, {d_new_B_inv, m * m},  
-		{d_next, blocks_for_n}, {d_curr, n}
+		{d_A, m * n}, {d_b, m}, {d_c, n}, {d_c_b_q, 1}, {d_B_inv, m * m},
+		{d_c_b, m}, {d_x_b, n}, {d_scalar, 1}, {d_y_aug, m + 1}, {d_min_val, 1},
+		{d_D, (m + 1) * n}, {d_e, n}, {d_alpha, m}, {d_theta, m},
+		{d_alpha_q, 1}, {d_B_inv_q, m}, {d_E_q, m}
 	};
 
 	PtrAlloc<int> int_allocs[] = {
-		{d_b_ixs, m}, {d_theta_flags, m}, {d_alpha_num_non_pos, 1}, {d_ix, 1}
+		{d_b_ixs, m}, {d_min_ix, 1}, {d_theta_flags, m}, {d_alpha_num_non_pos, 1}
 	};
 	
 	// ============== Allocation ==============
@@ -319,7 +260,8 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		cuda_malloc(ptr, size);
 	for (auto &[ptr, size] : int_allocs)
 		cuda_malloc(ptr, size);
-	t.alloc_end = Clock::now();
+	cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_e, d_min_val, d_min_ix, n);
+	cudaMalloc(&d_cub_tmp, cub_tmp_bytes);
 	
 	// ============ Initialization ============
 
@@ -332,12 +274,12 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	cuda_memcpy(d_x_b, d_b, m, cudaMemcpyDeviceToDevice);
 	init_b_ixs<<<blocks_for_m, BS_1D>>>(d_b_ixs, m, n);
 	cuda_memcpy(d_y_aug, &one, 1, cudaMemcpyHostToDevice);
+	cuda_memcpy(d_y_aug + 1, d_c_b, n - m, cudaMemcpyDeviceToDevice);
 	init_D_from_c<<<blocks_for_n, BS_1D>>>(d_c, d_D, m+1, n);
 	init_D_from_A<<<dim3(blocks_for_n, blocks_for_m + 1), dim3(BS_2D, BS_2D)>>>(d_A, d_D, m, n);
 	t.init_end = Clock::now();
 
-	int i = 0;
-	int p, q, alpha_num_non_pos;
+	int i = 0, p, q, alpha_num_non_pos;
 	auto status = SolveStatus::MaxIter;
 
 	// ============== Main loop ==============
@@ -345,34 +287,27 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		print_iteration(i);
 		// ========= Entering variable =========
 
-		t.ev_start = Clock::now();
-		// y_aug[1..m] = c_b * B_inv
-		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			1, m, m, &one, d_c_b, 1, d_B_inv, m, &zero, d_y_aug + 1, 1);
-		print_matrix(d_y_aug, 1, m + 1);
 		// e = [1 y] * [-c; A] 
 		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
 			1, n, m+1, &one, d_y_aug, 1, d_D, m+1, &zero, d_e, 1);
 		print_matrix(d_e, 1, n);
-		t.blas_end = Clock::now();
 
-		p = entering_var(d_e, n, blocks_for_n, d_curr, d_next, d_ix);
+		t.p_start = Clock::now();
+		cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_e, d_min_val, d_min_ix, n);
+		cudaMemcpy(&min_val, d_min_val, sizeof(real), cudaMemcpyDeviceToHost);
+		cudaMemcpy(&p, d_min_ix, sizeof(int), cudaMemcpyDeviceToHost);
+		t.p_duration += duration(t.p_start, Clock::now());
 		print_int(p);
-		t.ev_end = Clock::now();
-		if (p < 0) {
+		if (min_val >= -EPS) {
 			status = SolveStatus::OptimumFound;
 			break;
 		}
 
 		// ============ Leaving variable ============
 
-		t.lv_start = Clock::now();
-		// get column A_p from A
-		cudaMemcpy(d_A_p, d_A + p * m, m * sizeof(real), cudaMemcpyDeviceToDevice);
-		print_matrix(d_A_p, m, 1);
 		// alpha = B_inv * A_p
 		cublasSgemv(handle, CUBLAS_OP_N,
-			m, m, &one, d_B_inv, m, d_A_p, 1, &zero, d_alpha, 1);
+			m, m, &one, d_B_inv, m, d_A + p * m, 1, &zero, d_alpha, 1);
 		print_matrix(d_alpha, m, 1);
 		// reset the number of non-positive elements in alpha
 		cudaMemset(d_alpha_num_non_pos, 0, sizeof(int));
@@ -380,48 +315,56 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		compute_theta<<<blocks_for_m, BS_1D>>>
 			(d_x_b, d_alpha, d_theta, d_theta_flags, m, d_alpha_num_non_pos);
 		print_matrix(d_theta, m, 1);
+
 		cudaMemcpy(&alpha_num_non_pos, d_alpha_num_non_pos, sizeof(int), cudaMemcpyDeviceToHost);
 		print_int(alpha_num_non_pos);
-
 		if (alpha_num_non_pos == m) {
 			status = SolveStatus::Unbounded;
 			break;
 		}
-		q = get_min_ix(d_theta, m, blocks_for_m, nullptr, d_curr, d_next, d_ix);
+		
+		cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_theta, d_min_val, d_min_ix, m);
+		cudaMemcpy(&min_val, d_min_val, sizeof(real), cudaMemcpyDeviceToHost);
+		cudaMemcpy(&q, d_min_ix, sizeof(int), cudaMemcpyDeviceToHost);
 		print_int(q);
-		t.lv_end = Clock::now();
 
 		// ============ Update the basis ============
 
-		t.B_start = Clock::now();
-		if (compute_E(d_E, d_alpha, m, blocks_for_m, q, d_alpha_q)) {
-			status = SolveStatus::ThetaOverflow;
-			break;
-		}
-		print_matrix(d_E, m, m);
-		// new_B_inv = E * B_inv
-		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			m, m, m, &one, d_E, m, d_B_inv, m, &zero, d_new_B_inv, m);
-		print_matrix(d_new_B_inv, m, m);
-		std::swap(d_B_inv, d_new_B_inv);
-		t.B_end = Clock::now();
+		t.B_inv_start = Clock::now();
+		cublasScopy(handle, m, d_B_inv + q, m, d_B_inv_q, 1);
+		compute_E_q<<<blocks_for_m, BS_1D>>>(d_E_q, d_alpha, d_alpha + q, q, m);
+		cublasSger(handle, m, m, &one, d_E_q, 1, d_B_inv_q, 1, d_B_inv, m);
+		t.B_inv_duration += duration(t.B_inv_start, Clock::now());
+		print_matrix(d_B_inv, m, m);
 		
-		// ======= Update the cost, indices and solution =======
+		// ======= Update the cost, indices, solution and y =======
 
+		cudaMemcpy(d_c_b_q, d_c_b + q, sizeof(real), cudaMemcpyDeviceToDevice);
 		cudaMemcpy(d_c_b + q, d_c + p, sizeof(real), cudaMemcpyDeviceToDevice);
 		print_matrix(d_c_b, 1, m);
 		cudaMemcpy(d_b_ixs + q, &p, sizeof(int), cudaMemcpyHostToDevice);
 		print_matrix(d_b_ixs, 1, m);
+
+		t.x_b_start = Clock::now();
 		// x_b = B_inv * b
-		cublasSgemv(handle, CUBLAS_OP_N,
-			m, m, &one, d_B_inv, m, d_b, 1, &zero, d_x_b, 1);
+		cublasSdot(handle, m, d_B_inv_q, 1, d_b, 1, d_scalar);
+		cublasSaxpy(handle, m, d_scalar, d_E_q, 1, d_x_b, 1);
+		t.x_b_duration += duration(t.x_b_start, Clock::now());
 		print_matrix(d_x_b, m, 1);
+
+		t.y_start = Clock::now();
+		// y += ((c_p - c_b_q) + c_b * E_q) * B_inv_q
+		cublasSdot(handle, m, d_c_b, 1, d_E_q, 1, d_scalar);
+		compute_scalar<<<1,1>>>(d_c + p, d_c_b_q, d_scalar);
+		cublasSaxpy(handle, m, d_scalar, d_B_inv_q, 1, d_y_aug + 1, 1);
+		t.y_duration += duration(t.y_start, Clock::now());
 
 	} while (++i < MAX_ITER);
 	print_endline();
 
 	real z;
 	if (status == SolveStatus::OptimumFound) {
+		cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
 		cublasSdot(handle, m, d_c_b, 1, d_x_b, 1, &z);
 		cudaMemcpy(x_b, d_x_b, m * sizeof(real), cudaMemcpyDeviceToHost);
 		cudaMemcpy(b_ixs, d_b_ixs, m * sizeof(int), cudaMemcpyDeviceToHost);
@@ -430,9 +373,10 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	t.dealloc_start = Clock::now();
 	cublasDestroy(handle);
 	for (auto &[ptr,_] : real_allocs)
-		if (ptr) cudaFree(ptr);
+		cudaFree(ptr);
 	for (auto &[ptr,_] : int_allocs)
-		if (ptr) cudaFree(ptr);
+		cudaFree(ptr);
+	cudaFree(d_cub_tmp);
 	t.dealloc_end = Clock::now();
 	
 	return std::make_pair(z, status);
@@ -447,15 +391,15 @@ int main(int argc, char* argv[]) {
 		std::cerr << "Please, specify an input file.\n";
 		return 1;
 	}
+
+	TimeStruct t;
+	t.start = Clock::now();
 	
 	std::ifstream file(argv[1]);
 	if (!file.is_open()) {
 		std::cerr << "Could not open " << argv[1] << ".\n";
 		return 1;
 	}
-
-	TimePoints t;
-	t.start = Clock::now();
 
 	int m, n;
 	if (!(file >> m >> n) || m > n) {
@@ -471,17 +415,17 @@ int main(int argc, char* argv[]) {
 	cuda_malloc_host(c, n);
 	cuda_malloc_host(x_b, m);
 	cuda_malloc_host(b_ixs, m);
-	t.host_alloc_end = Clock::now();
 
 	t.file_read_start = Clock::now();
 	load_matrix(file, A, m, n);
 	load_matrix(file, b, m, 1);
 	load_matrix(file, c, 1, n);
 	file.close();
-	t.file_read_end = Clock::now();
 
+	t.solve_start = Clock::now();
 	auto [z, status] = solve(A, b, c, x_b, b_ixs, m, n, t);
 
+	t.print_result_start = Clock::now();
 	switch (status) {
 		case SolveStatus::OptimumFound:
 			std::cout << "Optimum found: " << z << '\n';
@@ -503,6 +447,7 @@ int main(int argc, char* argv[]) {
 	}
 	std::cout << '\n';
 
+	t.host_free_start = Clock::now();
 	cudaFreeHost(A);
 	cudaFreeHost(b);
 	cudaFreeHost(c);
@@ -512,15 +457,21 @@ int main(int argc, char* argv[]) {
 	t.end = Clock::now();
 
 	print_elapsed_time("Total", t.start, t.end);
-	print_elapsed_time("Read file", t.file_read_start, t.file_read_end);
-	print_elapsed_time("Host alloc", t.host_alloc_start, t.host_alloc_end);
-	print_elapsed_time("BLAS entering var", t.ev_start, t.blas_end);
-	print_elapsed_time("Entering var", t.ev_start, t.end);
-	print_elapsed_time("Alloc", t.alloc_start, t.alloc_end);
-	print_elapsed_time("Dealloc", t.dealloc_start, t.dealloc_end);
+	std::cout << '\n';
+	print_elapsed_time("y", t.y_duration);
+	print_elapsed_time("p", t.p_duration);
+	print_elapsed_time("B_inv", t.B_inv_duration);
+	print_elapsed_time("x_b", t.x_b_duration);
+	std::cout << '\n';
+	print_elapsed_time("Alloc", t.alloc_start, t.init_start);
 	print_elapsed_time("Init", t.init_start, t.init_end);
-	print_elapsed_time("Leaving var", t.lv_start, t.lv_end);
-	print_elapsed_time("Binv update", t.B_start, t.B_end);
+	print_elapsed_time("Dealloc", t.dealloc_start, t.dealloc_end);
+	std::cout << '\n';
+	print_elapsed_time("Host alloc", t.host_alloc_start, t.file_read_start);
+	print_elapsed_time("Read file", t.file_read_start, t.solve_start);
+	print_elapsed_time("Solve call", t.solve_start, t.print_result_start);
+	print_elapsed_time("Print result", t.print_result_start, t.host_free_start);
+	print_elapsed_time("Host free", t.host_free_start, t.end);
 
 	return 0;
 }

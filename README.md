@@ -16,13 +16,17 @@ and also on the student cluster (after adding module `cuda/13.0.2`)
 - [ ] Steepest edge
 - [ ] Steepest edge with a recurrence
 - [x] Quadratic update of B_inv without E
-- [ ] Linear update of y and x_b
+- [x] Linear update of y and x_b
 ## High-level:
-- [ ] CUB reduction
-- [ ] Explore different data storage
+- [x] CUB reduction
 - [ ] Move the logic around between CPU and GPU
-- [ ] Explore CUDA streams and std::async
+- [ ] Employ CUDA streams
 ## Low-level:
 - [ ] Optimize kernels (warps, cache, sync, atomic, …)
 - [ ] Tune BS differently for distinct tasks
-- [ ] Combine kernels to avoid restarts
+- [ ] Combine kernels to avoid restarts (CUDA graphs)
+## Other:
+- [ ] What if x_b_t < 0 for some t (compute_theta)
+- [ ] Division by a small number (two spots)
+- [ ] Explore different data storage (sparse, CSR)
+- [ ] Branch CUBLAS for "real"

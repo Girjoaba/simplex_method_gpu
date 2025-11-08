@@ -233,7 +233,7 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	int *d_theta_flags, *d_alpha_num_non_pos;
 
 	real min_val, *d_min_val;
-	int *d_min_ix;
+	int *d_p, *d_q;
   void *d_cub_tmp = nullptr;
   size_t cub_tmp_bytes = 0;
 
@@ -250,7 +250,7 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	};
 
 	PtrAlloc<int> int_allocs[] = {
-		{d_b_ixs, m}, {d_min_ix, 1}, {d_theta_flags, m}, {d_alpha_num_non_pos, 1}
+		{d_b_ixs, m}, {d_p, 1}, {d_q, 1}, {d_theta_flags, m}, {d_alpha_num_non_pos, 1}
 	};
 	
 	// ============== Allocation ==============
@@ -260,7 +260,7 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		cuda_malloc(ptr, size);
 	for (auto &[ptr, size] : int_allocs)
 		cuda_malloc(ptr, size);
-	cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_e, d_min_val, d_min_ix, n);
+	cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_e, d_min_val, d_p, n);
 	cudaMalloc(&d_cub_tmp, cub_tmp_bytes);
 	
 	// ============ Initialization ============
@@ -285,17 +285,15 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	// ============== Main loop ==============
 	do {
 		print_iteration(i);
-		// ========= Entering variable =========
-
 		// e = [1 y] * [-c; A] 
 		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
 			1, n, m+1, &one, d_y_aug, 1, d_D, m+1, &zero, d_e, 1);
 		print_matrix(d_e, 1, n);
 
 		t.p_start = Clock::now();
-		cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_e, d_min_val, d_min_ix, n);
+		cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_e, d_min_val, d_p, n);
 		cudaMemcpy(&min_val, d_min_val, sizeof(real), cudaMemcpyDeviceToHost);
-		cudaMemcpy(&p, d_min_ix, sizeof(int), cudaMemcpyDeviceToHost);
+		cudaMemcpy(&p, d_p, sizeof(int), cudaMemcpyDeviceToHost);
 		t.p_duration += duration(t.p_start, Clock::now());
 		print_int(p);
 		if (min_val >= -EPS) {
@@ -323,12 +321,11 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 			break;
 		}
 		
-		cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_theta, d_min_val, d_min_ix, m);
-		cudaMemcpy(&min_val, d_min_val, sizeof(real), cudaMemcpyDeviceToHost);
-		cudaMemcpy(&q, d_min_ix, sizeof(int), cudaMemcpyDeviceToHost);
+		cub::DeviceReduce::ArgMin(d_cub_tmp, cub_tmp_bytes, d_theta, d_min_val, d_q, m);
+		cudaMemcpy(&q, d_q, sizeof(int), cudaMemcpyDeviceToHost);
 		print_int(q);
 
-		// ============ Update the basis ============
+		// ============ Update B_inv ============
 
 		t.B_inv_start = Clock::now();
 		cublasScopy(handle, m, d_B_inv + q, m, d_B_inv_q, 1);
@@ -337,12 +334,12 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		t.B_inv_duration += duration(t.B_inv_start, Clock::now());
 		print_matrix(d_B_inv, m, m);
 		
-		// ======= Update the cost, indices, solution and y =======
+		// ======= Update c_b, b_ixs, x_b and y =======
 
 		cudaMemcpy(d_c_b_q, d_c_b + q, sizeof(real), cudaMemcpyDeviceToDevice);
 		cudaMemcpy(d_c_b + q, d_c + p, sizeof(real), cudaMemcpyDeviceToDevice);
 		print_matrix(d_c_b, 1, m);
-		cudaMemcpy(d_b_ixs + q, &p, sizeof(int), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_b_ixs + q, d_p, sizeof(int), cudaMemcpyDeviceToDevice);
 		print_matrix(d_b_ixs, 1, m);
 
 		t.x_b_start = Clock::now();

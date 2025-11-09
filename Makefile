@@ -43,7 +43,7 @@ RUN_TARGETS := $(patsubst %, run%, $(VERSIONS))
 all: $(TARGETS) $(GLPK_TARGETS)
 
 
-# === GLPK build ===
+# build glpk "interface" and "solver"
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 	@mkdir -p $(BIN_GLPK_DIR)
 	@echo "--- Compiling GLPK tool: $< -> $@ ---"
@@ -62,7 +62,6 @@ $(BIN_SOLVER_DIR)/solver%.out: $$(wildcard $(SRC_CUDA_DIR)/v%_*.cu)
 	@mkdir -p $(BIN_SOLVER_DIR)
 	@echo "--- Compiling: $<  ->  $@ ---"
 	$(NVCC) $(CXXFLAGS) $< -o $@ $(LIBS)
-
 
 
 # === Run rules (Dynamic) ===

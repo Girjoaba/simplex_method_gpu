@@ -46,7 +46,6 @@ all: $(TARGETS) $(GLPK_TARGETS)
 # build glpk "interface" and "solver"
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 	@mkdir -p $(BIN_GLPK_DIR)
-	@echo "--- Compiling GLPK tool: $< -> $@ ---"
 	$(CXX) $(CXXFLAGS) $< -o $@ $(GLPK_LIBS)
 	
 
@@ -60,7 +59,6 @@ $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 .SECONDEXPANSION:
 $(BIN_SOLVER_DIR)/solver%.out: $$(wildcard $(SRC_CUDA_DIR)/v%_*.cu)
 	@mkdir -p $(BIN_SOLVER_DIR)
-	@echo "--- Compiling: $<  ->  $@ ---"
 	$(NVCC) $(CXXFLAGS) $< -o $@ $(LIBS)
 
 
@@ -69,12 +67,10 @@ $(BIN_SOLVER_DIR)/solver%.out: $$(wildcard $(SRC_CUDA_DIR)/v%_*.cu)
 # 'run1' depends on 'bin/solver1.out'
 # '$<' refers to the first dependency (bin/solverN.out)
 $(RUN_TARGETS): run%: $(BIN_SOLVER_DIR)/solver%.out
-	@echo "--- Running: $< $(INPUT_FILE) ---"
 	@./$< $(INPUT_FILE)
 
 
 clean:
-	@echo "--- Cleaning $(BIN_SOLVER_DIR) $(BIN_GLPK_DIR) ---"
 	rm -rf $(BIN_SOLVER_DIR) $(BIN_GLPK_DIR)
 
 .PHONY: all clean $(RUN_TARGETS)

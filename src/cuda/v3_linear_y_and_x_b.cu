@@ -14,7 +14,7 @@ using real = float;
 constexpr int BS_1D = 256;
 constexpr int BS_2D = 16;
 constexpr real EPS = 1E-4f;
-constexpr int MAX_ITER = 5;
+constexpr int MAX_ITER = 50000;
 
 // #define PRINT
 
@@ -132,10 +132,8 @@ void print_int_impl(int i, const char* msg) {
 }
 
 void print_iteration(int i) {
-#ifndef PRINT
+#ifdef PRINT
 	std::cout << "# Iteration " << ++i << '\n';
-#else
-	std::cout << "# Iteration " << ++i << "\n\n";
 #endif
 }
 

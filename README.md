@@ -2,9 +2,40 @@
 Initial repository for the DPHPC course at ETH.
 
 # How to compile and run the program
+
+We use the glpk library as groundtruth. To compile both the cuda code and the glpk code:
 ```bash
-nvcc --std=c++20 src/solver.cu -o bin/solver.out -ccbin /usr/bin/g++-13 -lcublas
+make
+```
+
+```bash
+nvcc --std=c++20 src/solver.cu -o bin/solver.out -ccbin /usr/bin/g++-13 -lcublas 
 ./bin/solver.out input/sample.txt
+```
+
+## Test
+
+Important: the .mps problems must already be downloaded in the `problems\` folder. Download them from here TODO: add link
+ 
+### Automatic Testing
+To test a specific compiled solver:
+```bash
+bash scripts/test_solver_correctness.bash [YOUR_SOLVER] # defaults to "bin_solver/solver1.out"
+```
+
+### Folder Structure
+```text
+├── Makefile
+├── problems
+│   └── *.mps
+├── scripts/
+│   ├── generate_groundtruth.bash           (No need to run this)
+│   └── test_solver_correctness.bash        (Run this)
+├── test/
+│   ├── groundtruth/  
+│   │   └── *.txt
+│   └── experiment/           (Your outputs here)
+│       └── *.out
 ```
 
 # Remarks

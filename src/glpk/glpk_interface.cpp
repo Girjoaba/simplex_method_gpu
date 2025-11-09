@@ -78,28 +78,33 @@ LPProblem lp_from_mps(const std::string& filename) {
 }
 
 void output_lp(LPProblem *lp) {
-    // Output matches form of solver.cu
-    // Output of m n 
-    std::cout << lp->m << lp->n << "\n";
+    std::cout << lp->m << " " << lp->n << "\n";
 
-    // Output of A
+    // A
     for (const auto& row : lp->A) {
         for (double v : row) std::cout << v << " ";
+        std::cout << "\n";
     }
-    std::cout << "\n";
 
-    // Output of b
+    // b
     for (double v : lp->b) std::cout << v << " ";
     std::cout << "\n";
 
-    // Output of c
+    // c
     for (double v : lp->c) std::cout << v << " ";
     std::cout << "\n";
 }
 
-int main() {
+
+int main(int argc, char *argv[]) {
     // Example .mps file
-    LPProblem lp = lp_from_mps("problems/timtab1.mps");
+    glp_term_out(GLP_OFF); 
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " file.mps\n";
+        return 1;
+    }
+    const char *fname = argv[1];
+    LPProblem lp = lp_from_mps(fname);
     output_lp(&lp);
     return 0;
 }

@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include <format>
+// #include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -15,7 +15,7 @@ using real = float;
 constexpr int BS_1D = 256;
 constexpr int BS_2D = 16;
 constexpr real EPS = 1E-4f;
-constexpr int MAX_ITER = 5;
+constexpr int MAX_ITER = 5000000;
 
 // #define PRINT
 
@@ -67,7 +67,7 @@ template<typename T>
 void cuda_malloc_host_impl(T** ptr, int n, const char* name) {
 	cudaError_t err = cudaMallocHost((void**)ptr, n * sizeof(T));
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMallocHost failed for {}: {}\n", name, cudaGetErrorString(err));
+		std::cerr << "cudaMallocHost failed for " << name << ": " << cudaGetErrorString(err) << "\n";
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -76,7 +76,8 @@ template <typename T>
 void cuda_malloc_impl(T** d_ptr, int n, const char* name) {
 	cudaError_t err = cudaMalloc((void**)d_ptr, n * sizeof(T));
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMalloc failed for {}: {}\n", name, cudaGetErrorString(err));
+		// std::cerr << std::format("cudaMalloc failed for {}: {}\n", name, cudaGetErrorString(err));
+		std::cerr << "cudaMalloc failed for " << name <<": " << cudaGetErrorString(err) << "\n";
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -85,7 +86,8 @@ template <typename T>
 void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const char* name) {
 	cudaError_t err = cudaMemcpy((void*)dst, (void*)src, size * sizeof(T), kind);
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMemcpy failed for {}: {}\n", name, cudaGetErrorString(err));
+		// std::cerr << std::format("cudaMemcpy failed for {}: {}\n", name, cudaGetErrorString(err));
+		std::cerr << "cudaMemcpy failed for " << name << ": " << cudaGetErrorString(err) << "\n";
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -95,7 +97,8 @@ void load_matrix_impl(std::ifstream& file, T* a, int m, int n, const char* name)
 	for (int i = 0; i < m; ++i) {
 		for (int j = 0; j < n; ++j) {
 			if (!(file >> a[R2C(i, j, m)])) {
-				std::cerr <<std::format("Failed to read ({},{}) for {}\n", i, j, name);
+				// std::cerr <<std::format("Failed to read ({},{}) for {}\n", i, j, name);
+				std::cerr << "Failed to read (" << i << "," << j << ") for " << name << "\n";
 				std::exit(EXIT_FAILURE);
 			}
 		}

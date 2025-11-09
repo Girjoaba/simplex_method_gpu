@@ -44,3 +44,5 @@ problems
 
 # vscode files
 .vscode/
+
+bin*/

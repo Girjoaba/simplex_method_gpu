@@ -1,41 +1,54 @@
-# === Compiler and flags ===
+# Compiler flags
 NVCC        := nvcc
+CXX         := g++
 CXXFLAGS    := --std=c++20
-CCBIN       := /usr/bin/g++-13
 LIBS        := -lcublas
 
-# === Paths ===
-SRC_DIR     := src
-BIN_DIR     := bin
-INPUT_DIR   := input
+# Paths
+SRC_DIR     	:= src
+SRC_CUDA_DIR    := $(SRC_DIR)/cuda
+SRC_GLPK_DIR    := $(SRC_DIR)/glpk
+INPUT_DIR   	:= input
+BIN_SOLVER_DIR  := bin_solver
+BIN_GLPK_DIR    := bin_glpk
 
-# === Files ===
+# GLPK
+GLPK_PROGS   := glpk_interface glpk_solver
+GLPK_TARGETS := $(patsubst %, $(BIN_GLPK_DIR)/%, $(GLPK_PROGS))
+GLPK_LIBS    := -lglpk
+
 INPUT_FILE  := $(INPUT_DIR)/sample.txt
 
-# === Dynamic File Discovery ===
-# 1. Find all source files matching the pattern 'vN_....cu'
-SRCS := $(wildcard $(SRC_DIR)/v*_*.cu)
+# =============================================== |
+# ------------ Dynamic Source Loading ----------- |
+# =============================================== |
 
-# 2. Extract the base filenames (e.g., v1_foo.cu, v2_bar.cu)
-BASENAMES := $(notdir $(SRCS))
 
-# 3. Extract just the version numbers (e.g., "1 2 3")
-#    Uses 'tr' to put each file on a new line,
-#    'sed' to extract the number (v<num>_... -> <num>),
-#    and 'tr' again to put them back on one line.
-VERSIONS := $(shell echo "$(BASENAMES)" | tr ' ' '\n' | sed -n 's/v\([0-9]\+\)_.*/\1/p' | tr '\n' ' ')
+# 1. match v*.cu
+SRCS := $(wildcard $(SRC_CUDA_DIR)/v*_*.cu)
 
-# 4. Generate target executable names from version numbers
-#    (e.g., 1 -> bin/solver1.out, 2 -> bin/solver2.out)
-TARGETS := $(patsubst %, $(BIN_DIR)/solver%.out, $(VERSIONS))
+# 2. extract version numbers
+VERSIONS := $(shell echo "$(SRCS)" | tr ' ' '\n' | sed -n 's|.*/v\([0-9]\+\)_.*|\1|p' | tr '\n' ' ')
 
-# 5. Generate 'run' target names from the version numbers
-#    (e.g., 1 -> run1, 2 -> run2)
+# 3. generate targets from version numbers
+TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/solver%.out, $(VERSIONS))
+
+# 4. generate 'run' target names from the version numbers
 RUN_TARGETS := $(patsubst %, run%, $(VERSIONS))
 
-# === Default target ===
-# 'all' will build all found executables
-all: $(TARGETS)
+# =============================================== |
+# ------------------ Targets -------------------- |
+# =============================================== |
+
+all: $(TARGETS) $(GLPK_TARGETS)
+
+
+# === GLPK build ===
+$(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
+	@mkdir -p $(BIN_GLPK_DIR)
+	@echo "--- Compiling GLPK tool: $< -> $@ ---"
+	$(CXX) $(CXXFLAGS) $< -o $@ $(GLPK_LIBS)
+	
 
 # === Compile rule (Dynamic) ===
 # This rule matches targets like 'bin/solver1.out', 'bin/solver2.out', etc.
@@ -45,25 +58,24 @@ all: $(TARGETS)
 # This way, '%' is first expanded (e.g., to '1'), and *then*
 # make searches for the dependency (e.g., $(wildcard src/v1_*.cu)).
 .SECONDEXPANSION:
-$(BIN_DIR)/solver%.out: $$(wildcard $(SRC_DIR)/v%_*.cu)
-	@mkdir -p $(BIN_DIR)
+$(BIN_SOLVER_DIR)/solver%.out: $$(wildcard $(SRC_CUDA_DIR)/v%_*.cu)
+	@mkdir -p $(BIN_SOLVER_DIR)
 	@echo "--- Compiling: $<  ->  $@ ---"
-	$(NVCC) $(CXXFLAGS) $< -o $@ -ccbin $(CCBIN) $(LIBS)
+	$(NVCC) $(CXXFLAGS) $< -o $@ $(LIBS)
+
+
 
 # === Run rules (Dynamic) ===
 # This creates phony targets like 'run1', 'run2', etc.
 # 'run1' depends on 'bin/solver1.out'
 # '$<' refers to the first dependency (bin/solverN.out)
-$(RUN_TARGETS): run%: $(BIN_DIR)/solver%.out
+$(RUN_TARGETS): run%: $(BIN_SOLVER_DIR)/solver%.out
 	@echo "--- Running: $< $(INPUT_FILE) ---"
 	@./$< $(INPUT_FILE)
 
-# === Clean rule ===
-# Removes the entire bin directory
-clean:
-	@echo "--- Cleaning $(BIN_DIR) ---"
-	rm -rf $(BIN_DIR)
 
-# === Phony targets ===
-# Declare targets that are not files to prevent conflicts
+clean:
+	@echo "--- Cleaning $(BIN_SOLVER_DIR) $(BIN_GLPK_DIR) ---"
+	rm -rf $(BIN_SOLVER_DIR) $(BIN_GLPK_DIR)
+
 .PHONY: all clean $(RUN_TARGETS)

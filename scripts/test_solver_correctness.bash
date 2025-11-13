@@ -4,27 +4,32 @@ set -euo pipefail
 # ---------------------------------------------|
 # | Script Description                         |
 # ---------------------------------------------|
-# | 1. For every groundtruth                   |
-# | 1.1.      find the actual problem          |
-# | 1.2.      feed it into the glpk interface  |
-# | 1.3.      feed into our solver             |
+# | 1. For every canonical file                |
+# | 1.1.      find the groundtruth file        |
+# | 1.2.      feed canonical into solver bin   |
 # | 1.3.      compare with the gt result       |
 # ---------------------------------------------|
 
 make
 
-PROBLEMS_DIR="./problems"
+INPUT_DIR="./test/input"
 GROUNDTRUTH_DIR="./test/groundtruth"
 EXPERIMENT_DIR="./test/experiment"
 
-GLPK_INTERFACE="./bin_glpk/glpk_interface"
 SOLVER_BIN="${1:-./bin_solver/solver1.out}"   # optional arg
 
+# =====================================================
+# Filter flag:
+#   - Leave empty ("") to run on ALL canonical files
+#   - Set to a problem root name to run only that one,
+#     e.g.: TARGET_PROBLEM="adlittle"
+#     This corresponds to:
+#       ./test/input/adlittle.canonical
+#       ./test/groundtruth/adlittle.mps.txt
+# =====================================================
+TARGET_PROBLEM="" # afiro
+
 # sanity
-if [ ! -x "$GLPK_INTERFACE" ]; then
-    echo "error: $GLPK_INTERFACE not found or not executable" >&2
-    exit 1
-fi
 if [ ! -x "$SOLVER_BIN" ]; then
     echo "error: solver '$SOLVER_BIN' not found or not executable" >&2
     exit 1
@@ -35,56 +40,58 @@ rm -rf "$EXPERIMENT_DIR"
 mkdir -p "$EXPERIMENT_DIR"
 
 echo "[info] writing results to $EXPERIMENT_DIR"
+if [ -n "$TARGET_PROBLEM" ]; then
+    echo "[info] filtering to problem: $TARGET_PROBLEM"
+else
+    echo "[info] running on all problems"
+fi
 
-attempted=0          # has matching problem file
-glpk_errors=0
+attempted=0          # has matching gt file
+glpk_errors=0        # repurposed: missing gt / mapping issues
 solver_errors=0
 success=0            # solver ran OK
 compared=0
 correct=0
 wrong=0
 
-for gt in "$GROUNDTRUTH_DIR"/*.txt; do
+for canonical_path in "$INPUT_DIR"/*.canonical; do
     # if no files, skip pattern literal
+    if [ ! -f "$canonical_path" ]; then
+        continue
+    fi
+
+    canonical_base=$(basename "$canonical_path")      # e.g. adlittle.canonical
+    problem_root=${canonical_base%.canonical}         # e.g. adlittle
+
+    # Apply filter if TARGET_PROBLEM is set
+    if [ -n "$TARGET_PROBLEM" ] && [ "$problem_root" != "$TARGET_PROBLEM" ]; then
+        continue
+    fi
+
+    problem_name="${problem_root}.mps"                # e.g. adlittle.mps
+    gt="$GROUNDTRUTH_DIR/$problem_name.txt"           # e.g. ./test/groundtruth/adlittle.mps.txt
+
     if [ ! -f "$gt" ]; then
-        continue
-    fi
-
-    base_gt=$(basename "$gt")          # e.g. timtab1.mps.txt
-    problem_name=${base_gt%.txt}       # e.g. timtab1.mps
-    problem_path="$PROBLEMS_DIR/$problem_name"
-
-    if [ ! -f "$problem_path" ]; then
-        echo "[warn] ⭕ problem file not found for $gt -> expected $problem_path, skipping"
-        continue
-    fi
-
-    attempted=$((attempted + 1))
-    # echo "[run] $problem_path"
-
-    tmp_lp=$(mktemp)
-
-    # 1) MPS -> LP
-    if ! "$GLPK_INTERFACE" "$problem_path" > "$tmp_lp"; then
-        echo "[warn] ⭕ glpk_interface failed for $problem_path, skipping"
-        rm -f "$tmp_lp"
+        echo "[warn] ⭕ groundtruth file not found for $canonical_base -> expected $gt, skipping"
         glpk_errors=$((glpk_errors + 1))
         continue
     fi
 
-    # 2) run solver on lp
-    out_file="$EXPERIMENT_DIR/$problem_name.out"
-    if ! "$SOLVER_BIN" "$tmp_lp" > "$out_file"; then
-        echo "[warn] ⭕ solver failed for $problem_path, skipping"
-        rm -f "$tmp_lp" "$out_file"
+    attempted=$((attempted + 1))
+    # echo "[run] $canonical_path"
+
+    # 1) run solver on canonical file
+    out_file="$EXPERIMENT_DIR/$problem_name.txt"
+    if ! "$SOLVER_BIN" "$canonical_path" > "$out_file"; then
+        echo "[warn] ⭕ solver failed for $canonical_path, skipping"
+        rm -f "$out_file"
         solver_errors=$((solver_errors + 1))
         continue
     fi
-    rm -f "$tmp_lp"
     success=$((success + 1))
 
-    # 3) compare with ground truth
-    # ground truth should have just the numeric optimal value (maybe in 1.23e+04)
+    # 2) compare with ground truth
+    # ground truth has just the numeric optimal value
     gt_val=$(tr -d ' \t\r\n' < "$gt")
 
     # extract "Optimum found: NUM" from experiment
@@ -113,7 +120,7 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
     if awk -v a="$exp_val" -v b="$gt_val" 'BEGIN {
         da = (a - b); if (da < 0) da = -da;
         ab = b; if (ab < 0) ab = -ab;
-        tol = 1e-4; 
+        tol = 1e-4;
         if (ab > 1) tol = tol * ab;
         exit !(da <= tol);
     }'; then
@@ -126,10 +133,10 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
 done
 
 echo "===================================="
-echo "Attempted (had matching problem) : $attempted"
-echo "GLPK interface errors ⭕         : $glpk_errors"
+echo "Attempted (had matching gt)      : $attempted"
+# echo "GT / mapping errors ⭕           : $glpk_errors"
 echo "Solver errors ⭕                 : $solver_errors"
-echo "Successfully solved              : $success"
+# echo "Successfully solved              : $success"
 echo "Compared                         : $compared"
 echo "Correct ✅                       : $correct"
 echo "Wrong ❌                         : $wrong"

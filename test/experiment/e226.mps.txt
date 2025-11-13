@@ -1,0 +1,18 @@
+Problem unbounded.
+
+            Total:   0.17
+
+                y:   0.05
+                p:   0.00
+            B_inv:   0.00
+              x_b:   0.00
+
+            Alloc:   0.00
+             Init:   0.00
+          Dealloc:   0.00
+
+       Host alloc:   0.11
+        Read file:   0.01
+       Solve call:   0.05
+     Print result:   0.00
+        Host free:   0.00

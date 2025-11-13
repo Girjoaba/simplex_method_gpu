@@ -1,0 +1,23 @@
+Optimum found: 4620.83
+	x_1 = 87.5
+	x_4 = 60.4167
+	x_12 = 181.25
+	x_9 = 116.667
+	x_14 = 237.5
+
+            Total:   0.17
+
+                y:   0.04
+                p:   0.00
+            B_inv:   0.00
+              x_b:   0.00
+
+            Alloc:   0.00
+             Init:   0.00
+          Dealloc:   0.00
+
+       Host alloc:   0.11
+        Read file:   0.00
+       Solve call:   0.06
+     Print result:   0.00
+        Host free:   0.00

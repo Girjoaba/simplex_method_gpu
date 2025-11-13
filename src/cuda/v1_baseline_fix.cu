@@ -15,7 +15,7 @@ using real = float;
 constexpr int BS_1D = 256;
 constexpr int BS_2D = 16;
 constexpr real EPS = 1E-4f;
-constexpr int MAX_ITER = 500000;
+constexpr int MAX_ITER = 50000;
 
 // #define PRINT
 // TODO: CudaGetDeviceProperties()

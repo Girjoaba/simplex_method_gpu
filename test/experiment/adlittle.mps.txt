@@ -1,0 +1,18 @@
+MAX_ITER exceeded.
+
+            Total:   5.91
+
+                y:   0.30
+                p:   1.32
+            B_inv:   0.71
+              x_b:   0.30
+
+            Alloc:   0.00
+             Init:   0.01
+          Dealloc:   0.00
+
+       Host alloc:   0.13
+        Read file:   0.00
+       Solve call:   5.78
+     Print result:   0.00
+        Host free:   0.00

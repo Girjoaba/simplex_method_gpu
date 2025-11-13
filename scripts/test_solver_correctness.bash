@@ -55,18 +55,18 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
     problem_path="$PROBLEMS_DIR/$problem_name"
 
     if [ ! -f "$problem_path" ]; then
-        echo "[warn] problem file not found for $gt -> expected $problem_path, skipping"
+        echo "[warn] ⭕ problem file not found for $gt -> expected $problem_path, skipping"
         continue
     fi
 
     attempted=$((attempted + 1))
-    echo "[run] $problem_path"
+    # echo "[run] $problem_path"
 
     tmp_lp=$(mktemp)
 
     # 1) MPS -> LP
     if ! "$GLPK_INTERFACE" "$problem_path" > "$tmp_lp"; then
-        echo "[warn] glpk_interface failed for $problem_path, skipping"
+        echo "[warn] ⭕ glpk_interface failed for $problem_path, skipping"
         rm -f "$tmp_lp"
         glpk_errors=$((glpk_errors + 1))
         continue
@@ -75,7 +75,7 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
     # 2) run solver on lp
     out_file="$EXPERIMENT_DIR/$problem_name.out"
     if ! "$SOLVER_BIN" "$tmp_lp" > "$out_file"; then
-        echo "[warn] solver failed for $problem_path, skipping"
+        echo "[warn] ⭕ solver failed for $problem_path, skipping"
         rm -f "$tmp_lp" "$out_file"
         solver_errors=$((solver_errors + 1))
         continue
@@ -93,7 +93,7 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
     compared=$((compared + 1))
 
     if [ -z "$exp_line" ]; then
-        echo "[compare] $problem_name: experiment missing 'Optimum found:' -> WRONG"
+        echo "[compare] ❌ $problem_name: experiment missing 'Optimum found:' -> WRONG"
         wrong=$((wrong + 1))
         continue
     fi
@@ -103,7 +103,7 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
 
     # if either is empty -> wrong
     if [ -z "$exp_val" ] || [ -z "$gt_val" ]; then
-        echo "[compare] $problem_name: cannot parse numbers -> WRONG"
+        echo "[compare] ❌ $problem_name: cannot parse numbers -> WRONG"
         wrong=$((wrong + 1))
         continue
     fi
@@ -117,20 +117,20 @@ for gt in "$GROUNDTRUTH_DIR"/*.txt; do
         if (ab > 1) tol = tol * ab;
         exit !(da <= tol);
     }'; then
-        echo "[compare] $problem_name: OK (exp=$exp_val, gt=$gt_val)"
+        echo "[compare] $problem_name: OK ✅ (exp=$exp_val, gt=$gt_val)"
         correct=$((correct + 1))
     else
-        echo "[compare] $problem_name: MISMATCH (exp=$exp_val, gt=$gt_val)"
+        echo "[compare] ❌ $problem_name: MISMATCH (exp=$exp_val, gt=$gt_val)"
         wrong=$((wrong + 1))
     fi
 done
 
 echo "===================================="
 echo "Attempted (had matching problem) : $attempted"
-echo "GLPK interface errors            : $glpk_errors"
-echo "Solver errors                    : $solver_errors"
+echo "GLPK interface errors ⭕         : $glpk_errors"
+echo "Solver errors ⭕                 : $solver_errors"
 echo "Successfully solved              : $success"
 echo "Compared                         : $compared"
-echo "Correct                          : $correct"
-echo "Wrong                            : $wrong"
+echo "Correct ✅                       : $correct"
+echo "Wrong ❌                         : $wrong"
 echo "Experiment dir                   : $EXPERIMENT_DIR"

@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Different solvers are available
+    glp_set_obj_dir(lp, GLP_MIN);
     glp_simplex(lp, NULL);
 
     // Retrieve results

@@ -2,7 +2,7 @@
 NVCC        := nvcc
 CXX         := g++
 CXXFLAGS    := --std=c++20
-LIBS        := -lcublas
+LIBS        := -lcublas -lcusolver
 
 # Paths
 SRC_DIR     	:= src

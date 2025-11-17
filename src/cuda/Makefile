@@ -1,14 +1,12 @@
-EIGEN_DIR ?= $(HOME)/eigen-3.4.0
-
 # Compiler flags
 NVCC        := nvcc
 CXX         := g++
-CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O2
+CXXFLAGS    := --std=c++20
 LIBS        := -lcublas
 
 # Paths
 SRC_DIR     	:= src
-SRC_CUDA_DIR    := $(SRC_DIR)/cuda_slow
+SRC_CUDA_DIR    := $(SRC_DIR)/cuda
 SRC_GLPK_DIR    := $(SRC_DIR)/glpk
 INPUT_DIR   	:= input
 BIN_SOLVER_DIR  := bin_solver
@@ -42,8 +40,8 @@ RUN_TARGETS := $(patsubst %, run%, $(VERSIONS))
 # ------------------ Targets -------------------- |
 # =============================================== |
 
-# all: $(TARGETS) $(GLPK_TARGETS)
-all: $(TARGETS)
+all: $(TARGETS) $(GLPK_TARGETS)
+
 
 # build glpk "interface" and "solver"
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp

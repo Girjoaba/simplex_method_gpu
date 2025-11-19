@@ -59,10 +59,10 @@ for in_file in "${PROBLEM_FILES[@]}"; do
     fi
 
     # Extract the objective value from the solver output
-    if grep -q '^Optimal objective:' "$tmp_out"; then
-        grep '^Optimal objective:' "$tmp_out" | awk '{print $NF}' > "$out_file"
+    if grep -q '^Optimum found:' "$tmp_out"; then
+        grep '^Optimum found:' "$tmp_out" | awk '{print $NF}' > "$out_file"
     else
-        echo "[skip] no 'Optimal objective:' in output for $in_file"
+        echo "[skip] no 'Optimum found:' in output for $in_file"
         rm -f "$out_file"
         errors=$((errors + 1))
     fi

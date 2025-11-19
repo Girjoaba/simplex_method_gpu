@@ -1,0 +1,12 @@
+#!/bin/bash
+# Wrapper script to run Gurobi solver from benchmark infrastructure
+# Calls the Python solver with the canonical file path
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+# Activate virtual environment
+source "${PROJECT_ROOT}/.venv/bin/activate"
+
+# Run the solver
+python3 "${SCRIPT_DIR}/solver_gurobi.py" "$@"

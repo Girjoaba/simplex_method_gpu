@@ -1,6 +1,7 @@
 import gurobipy as gp
 import numpy as np
 import argparse
+import sys
 
 args = argparse.ArgumentParser(description="Path to the canonical problem file.")
 args.add_argument(
@@ -40,10 +41,16 @@ def solve_canonical_file(path):
 
     model.optimize()
 
-    print("Status:", model.Status)
     if model.Status == gp.GRB.OPTIMAL:
-        print("Optimal objective:", model.ObjVal)
-        print("Solution:", x.X)
+        # Output format required by benchmark infrastructure
+        print(f"Optimum found: {model.ObjVal:.16f}")
+        for i in range(len(x.X)):
+            print(f"x[{i}] = {x.X[i]:.16e}")
+        print(f"Iterations: {int(model.IterCount)}")
+    else:
+        # Handle non-optimal status
+        print(f"Solver failed with status: {model.Status}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     parsed_args = args.parse_args()

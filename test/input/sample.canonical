@@ -1,0 +1,16 @@
+2 4
+1 1 1 0
+2 1 0 1
+4 5
+3 2 0 0
+
+Explanation:
+
+Starts with m n
+Followed by A
+Followed by b
+Followed by c
+
+
+Optimum: 9
+For x0 = 1, x1 = 3

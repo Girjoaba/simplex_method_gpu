@@ -44,3 +44,21 @@ problems
 
 # vscode files
 .vscode/
+
+bin*/
+
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+.venv/
+
+# Benchmark outputs
+benchmarks/measurements/
+benchmarks/plots/
+benchmarks/*.log
+
+# Build artifacts
+glop_baseline/build/
+
+# Test experiment outputs
+test/experiment/

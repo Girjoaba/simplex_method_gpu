@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include <format>
+// #include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -15,7 +15,7 @@ using real = float;
 constexpr int BS_1D = 256;
 constexpr int BS_2D = 16;
 constexpr real EPS = 1E-4f;
-constexpr int MAX_ITER = 5;
+constexpr int MAX_ITER = 50000;
 
 // #define PRINT
 
@@ -67,7 +67,8 @@ template<typename T>
 void cuda_malloc_host_impl(T** ptr, int n, const char* name) {
 	cudaError_t err = cudaMallocHost((void**)ptr, n * sizeof(T));
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMallocHost failed for {}: {}\n", name, cudaGetErrorString(err));
+		// std::cerr << std::format("cudaMallocHost failed for {}: {}\n", name, cudaGetErrorString(err));
+		std::cerr << "cudaMallocHost failed for " << name << ": " << cudaGetErrorString(err) << "\n";
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -76,7 +77,7 @@ template <typename T>
 void cuda_malloc_impl(T** d_ptr, int n, const char* name) {
 	cudaError_t err = cudaMalloc((void**)d_ptr, n * sizeof(T));
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMalloc failed for {}: {}\n", name, cudaGetErrorString(err));
+		std::cerr << "cudaMalloc failed for " << name << ": " << cudaGetErrorString(err) << "\n";
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -85,7 +86,7 @@ template <typename T>
 void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const char* name) {
 	cudaError_t err = cudaMemcpy((void*)dst, (void*)src, size * sizeof(T), kind);
 	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMemcpy failed for {}: {}\n", name, cudaGetErrorString(err));
+		std::cerr << "cudaMemcpy failed for " << name << ": " << cudaGetErrorString(err) << "\n";
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -95,7 +96,7 @@ void load_matrix_impl(std::ifstream& file, T* a, int m, int n, const char* name)
 	for (int i = 0; i < m; ++i) {
 		for (int j = 0; j < n; ++j) {
 			if (!(file >> a[R2C(i, j, m)])) {
-				std::cerr <<std::format("Failed to read ({},{}) for {}\n", i, j, name);
+				std::cerr << "Failed to read (" << i << "," << j << ") for " << name << "\n";
 				std::exit(EXIT_FAILURE);
 			}
 		}
@@ -133,10 +134,8 @@ void print_int_impl(int i, const char* msg) {
 }
 
 void print_iteration(int i) {
-#ifndef PRINT
+#ifdef PRINT
 	std::cout << "# Iteration " << ++i << '\n';
-#else
-	std::cout << "# Iteration " << ++i << "\n\n";
 #endif
 }
 
@@ -189,10 +188,6 @@ __global__ void init_I(real* I, int m) {
 __global__ void init_b_ixs(int* b_ixs, int m, int n) {
 	int j = blockIdx.x * blockDim.x + threadIdx.x;
 	if (j < m) b_ixs[j] = n - m + j;
-}
-
-__global__ void compute_scalar(real* c_p, real* c_b_q, real* scalar) {
-	scalar[0] += c_p[0] - c_b_q[0];
 }
 
 __global__ void reduce_min(real* vec, int n, real* mins) {
@@ -277,11 +272,10 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		std::cerr << "cublasCreate failed.\n";
 		std::exit(EXIT_FAILURE);
 	}
-	cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE);
 
 	real *d_A, *d_b, *d_c;
-	real *d_B_inv, *d_c_b, *d_c_b_q, *d_x_b;
-	real *d_scalar, *d_y_aug, *d_D, *d_e;
+	real *d_B_inv, *d_c_b, *d_x_b;
+	real *d_y_aug, *d_D, *d_e;
 	real *d_alpha, *d_theta;
 	real *d_alpha_q, *d_B_inv_q, *d_E_q;
 	real *d_next, *d_curr;
@@ -295,9 +289,9 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	const real one = 1.0f, zero = 0.0f;
 
 	PtrAlloc<real> real_allocs[] = {
-		{d_A, m * n}, {d_b, m}, {d_c, n}, {d_c_b_q, 1}, {d_B_inv, m * m},
-		{d_c_b, m}, {d_x_b, n}, {d_scalar, 1}, {d_y_aug, m + 1},
-		{d_D, (m + 1) * n}, {d_e, n}, {d_alpha, m}, {d_theta, m}, {d_alpha_q, 1},
+		{d_A, m * n}, {d_b, m}, {d_c, n}, {d_B_inv, m * m},
+		{d_c_b, m}, {d_x_b, n}, {d_y_aug, m + 1}, {d_D, (m + 1) * n},
+		{d_e, n}, {d_alpha, m}, {d_theta, m}, {d_alpha_q, 1},
 		{d_B_inv_q, m}, {d_E_q, m}, {d_next, blocks_for_n}, {d_curr, n}
 	};
 
@@ -324,7 +318,6 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 	cuda_memcpy(d_x_b, d_b, m, cudaMemcpyDeviceToDevice);
 	init_b_ixs<<<blocks_for_m, BS_1D>>>(d_b_ixs, m, n);
 	cuda_memcpy(d_y_aug, &one, 1, cudaMemcpyHostToDevice);
-	cuda_memcpy(d_y_aug + 1, d_c_b, n - m, cudaMemcpyDeviceToDevice);
 	init_D_from_c<<<blocks_for_n, BS_1D>>>(d_c, d_D, m+1, n);
 	init_D_from_A<<<dim3(blocks_for_n, blocks_for_m + 1), dim3(BS_2D, BS_2D)>>>(d_A, d_D, m, n);
 	t.init_end = Clock::now();
@@ -338,6 +331,12 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		print_iteration(i);
 		// ========= Entering variable =========
 
+		t.y_start = Clock::now();
+		// y_aug[1..m] = c_b * B_inv
+		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+			1, m, m, &one, d_c_b, 1, d_B_inv, m, &zero, d_y_aug + 1, 1);
+		t.y_duration += duration(t.y_start, Clock::now());
+		print_matrix(d_y_aug, 1, m + 1);
 		// e = [1 y] * [-c; A] 
 		cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
 			1, n, m+1, &one, d_y_aug, 1, d_D, m+1, &zero, d_e, 1);
@@ -383,10 +382,9 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 		cublasSger(handle, m, m, &one, d_E_q, 1, d_B_inv_q, 1, d_B_inv, m);
 		t.B_inv_duration += duration(t.B_inv_start, Clock::now());
 		print_matrix(d_B_inv, m, m);
-		
-		// ======= Update the cost, indices, solution and y =======
 
-		cudaMemcpy(d_c_b_q, d_c_b + q, sizeof(real), cudaMemcpyDeviceToDevice);
+		// ======= Update the cost, indices and solution =======
+
 		cudaMemcpy(d_c_b + q, d_c + p, sizeof(real), cudaMemcpyDeviceToDevice);
 		print_matrix(d_c_b, 1, m);
 		cudaMemcpy(d_b_ixs + q, &p, sizeof(int), cudaMemcpyHostToDevice);
@@ -394,24 +392,16 @@ std::pair<real, SolveStatus> solve(real* A, real* b, real* c, real* x_b, int* b_
 
 		t.x_b_start = Clock::now();
 		// x_b = B_inv * b
-		cublasSdot(handle, m, d_B_inv_q, 1, d_b, 1, d_scalar);
-		cublasSaxpy(handle, m, d_scalar, d_E_q, 1, d_x_b, 1);
+		cublasSgemv(handle, CUBLAS_OP_N,
+			m, m, &one, d_B_inv, m, d_b, 1, &zero, d_x_b, 1);
 		t.x_b_duration += duration(t.x_b_start, Clock::now());
 		print_matrix(d_x_b, m, 1);
-
-		t.y_start = Clock::now();
-		// y += ((c_p - c_b_q) + c_b * E_q) * B_inv_q
-		cublasSdot(handle, m, d_c_b, 1, d_E_q, 1, d_scalar);
-		compute_scalar<<<1,1>>>(d_c + p, d_c_b_q, d_scalar);
-		cublasSaxpy(handle, m, d_scalar, d_B_inv_q, 1, d_y_aug + 1, 1);
-		t.y_duration += duration(t.y_start, Clock::now());
 
 	} while (++i < MAX_ITER);
 	print_endline();
 
 	real z;
 	if (status == SolveStatus::OptimumFound) {
-		cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_HOST);
 		cublasSdot(handle, m, d_c_b, 1, d_x_b, 1, &z);
 		cudaMemcpy(x_b, d_x_b, m * sizeof(real), cudaMemcpyDeviceToHost);
 		cudaMemcpy(b_ixs, d_b_ixs, m * sizeof(int), cudaMemcpyDeviceToHost);

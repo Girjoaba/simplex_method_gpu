@@ -43,11 +43,26 @@ LPProblem lp_from_mps(const std::string& filename) {
         lpProblem.ub[j-1] = glp_get_col_ub(lp, j);
     }
 
-    for (int i = 1; i <= m; ++i) {
+    std::cout << "HERE " << m << "\n";
+    for (int i = 1; i <= m; i++) {
+        std::cout << "AGAIN\n";
         int type = glp_get_row_type(lp, i);
-        if (type == GLP_UP)        lpProblem.b[i-1] = glp_get_row_ub(lp, i);
-        else if (type == GLP_LO)   lpProblem.b[i-1] = glp_get_row_lb(lp, i);
-        else if (type == GLP_FX)   lpProblem.b[i-1] = glp_get_row_lb(lp, i);
+        switch (type) {
+            case GLP_UP:
+                std::cout << "up\n";
+                break;
+            case GLP_LO:
+                std::cout << "down\n"; break;
+            case GLP_FX:
+                std::cout << "objective\n"; break;
+            case GLP_FR:
+                std::cout << "FR\n"; break;
+            default:
+                std::cout << "DEFAULT\n";
+        }
+        if (type == GLP_UP)        lpProblem.b[i-1] = glp_get_row_lb(lp, i);
+        else if (type == GLP_LO)   lpProblem.b[i-1] = glp_get_row_ub(lp, i);
+        else if (type == GLP_FX)   lpProblem.b[i-1] = glp_get_row_ub(lp, i);
         else if (type == GLP_FR)   lpProblem.b[i-1] = 0.0;
     }
 
@@ -78,28 +93,33 @@ LPProblem lp_from_mps(const std::string& filename) {
 }
 
 void output_lp(LPProblem *lp) {
-    // Output matches form of solver.cu
-    // Output of m n 
-    std::cout << lp->m << lp->n << "\n";
+    std::cout << lp->m << " " << lp->n << "\n";
 
-    // Output of A
+    // A
     for (const auto& row : lp->A) {
         for (double v : row) std::cout << v << " ";
+        std::cout << "\n";
     }
-    std::cout << "\n";
 
-    // Output of b
+    // b
     for (double v : lp->b) std::cout << v << " ";
     std::cout << "\n";
 
-    // Output of c
+    // c
     for (double v : lp->c) std::cout << v << " ";
     std::cout << "\n";
 }
 
-int main() {
+
+int main(int argc, char *argv[]) {
     // Example .mps file
-    LPProblem lp = lp_from_mps("problems/timtab1.mps");
+    glp_term_out(GLP_OFF); 
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " file.mps\n";
+        return 1;
+    }
+    const char *fname = argv[1];
+    LPProblem lp = lp_from_mps(fname);
     output_lp(&lp);
     return 0;
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <vector>
+#include <iomanip>
 
 #define MAX_ITERS 200000
 
@@ -58,6 +59,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         
         // If no more reductions, exit
         if (enter == -1) {
+            std::cout << "Iteration: " << iter << "\n";
             Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
             for (int i = 0; i < m; ++i) {
                 x(basis[i]) = std::max(0.0, xB(i));
@@ -136,6 +138,6 @@ int main() {
     Eigen::VectorXd z = simplex_method(A, b, c, n, m);
     double optimum = c.dot(z);  // Compute c^T * z
     // std::cout << "Output:\n" << z.transpose() << "\n";
-    std::cout << "Optimum found: " << optimum << "\n";
+    std::cout << std::setprecision(15) << "Optimum found: " << optimum << "\n";
 
 }

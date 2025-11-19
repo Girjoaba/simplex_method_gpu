@@ -82,7 +82,7 @@ for canonical_path in "$INPUT_DIR"/*.canonical; do
 
     # 1) run solver on canonical file
     out_file="$EXPERIMENT_DIR/$problem_name.txt"
-    if ! "$SOLVER_BIN" "$canonical_path" > "$out_file"; then
+    if ! "$SOLVER_BIN" < "$canonical_path" > "$out_file"; then
         echo "[warn] ⭕ solver failed for $canonical_path, skipping"
         rm -f "$out_file"
         solver_errors=$((solver_errors + 1))
@@ -124,10 +124,10 @@ for canonical_path in "$INPUT_DIR"/*.canonical; do
         if (ab > 1) tol = tol * ab;
         exit !(da <= tol);
     }'; then
-        echo "[compare] $problem_name: OK ✅ (exp=$exp_val, gt=$gt_val)"
+        echo "[compare] $problem_name: OK ✅ (got=$exp_val, expected=$gt_val)"
         correct=$((correct + 1))
     else
-        echo "[compare] ❌ $problem_name: MISMATCH (exp=$exp_val, gt=$gt_val)"
+        echo "[compare] ❌ $problem_name: MISMATCH (got=$exp_val, expected=$gt_val)"
         wrong=$((wrong + 1))
     fi
 done

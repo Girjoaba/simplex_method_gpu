@@ -1,0 +1,2 @@
+Iteration: 3
+Optimum found: 4620.83333333333

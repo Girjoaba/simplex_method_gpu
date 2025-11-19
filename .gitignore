@@ -44,6 +44,7 @@ problems
 
 # vscode files
 .vscode/
+.venv/
 
 bin*/
 

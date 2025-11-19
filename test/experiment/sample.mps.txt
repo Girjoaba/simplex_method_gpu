@@ -1,0 +1,2 @@
+Iteration: 2
+Optimum found: 9

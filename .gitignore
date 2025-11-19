@@ -47,3 +47,5 @@ problems
 .venv/
 
 bin*/
+__pycache__/
+build/

@@ -81,9 +81,7 @@ def mps2canonical(mps_file_path, output_file):
     surplus_cols = []
     basis_cols = []
     
-    # Objective penalties
-    # Big M constant (penalty for artificial vars)
-    M = 1e6 
+    M = 1e6         # objective penalty for artificial constraint
     c_surplus = []
     c_basis = []
     
@@ -105,10 +103,9 @@ def mps2canonical(mps_file_path, output_file):
             
             # 2. Artificial variable (+1) is Basic
             basis_cols.append(col_vec)
-            c_basis.append(-M) # Artificial has -M cost (for Max problem)
+            c_basis.append(-M) # -M cost for Max problem
             
-    # Stack matrices
-    # If there are no surplus columns, we handle shape correctly
+    # Create surplus columns
     if surplus_cols:
         A_surplus = np.column_stack(surplus_cols)
     else:
@@ -146,6 +143,7 @@ def mps2canonical(mps_file_path, output_file):
         c_data = np.asarray(c_final).flatten()
         f.write(" ".join(map(str, c_data)) + "\n")
 
+    return A_final, b, c_final, is_minimization
 
 if __name__ == "__main__":
     parsed_args = args.parse_args()

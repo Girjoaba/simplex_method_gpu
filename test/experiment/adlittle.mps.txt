@@ -1,2 +1,2 @@
-Iteration: 150
-Optimum found: -225494.96316238
+Iteration: 149
+Optimum found: -225494.963162664

@@ -1,14 +1,14 @@
 #include <iostream>
-#include <Eigen/Dense>
-#include <vector>
 #include <iomanip>
+#include <limits>
+#include <vector>
+
+#include <Eigen/Dense>
+#include <Eigen/LU>
 
 #define MAX_ITERS 200000
 
 const double EPSILON = 1e-10;
-#include <limits>
-#include <vector>
-#include <Eigen/Dense>
 
 Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
                                const Eigen::VectorXd& b,
@@ -38,8 +38,8 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 
     for (int iter = 0; iter < MAX_ITERS; ++iter) {
         /* Determine entering variable */
-        Eigen::MatrixXd Binv   = B.inverse();
-        Eigen::VectorXd lambda = Binv.transpose() * cB;         // y[m] <- cB * B^-1
+        Eigen::PartialPivLU<Eigen::MatrixXd> lu(B);     // We use LU Decomposition
+        Eigen::VectorXd lambda = lu.transpose().solve(cB);         // y[m] <- cB * B^-1
         Eigen::VectorXd s      = c - A.transpose() * lambda;    // e[n] <- [1, y] * [-c; A]
         
         std::vector<char> inBasis(n, 0);
@@ -55,7 +55,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             }
         }
         
-        Eigen::VectorXd xB = Binv * b;
+        Eigen::VectorXd xB = lu.solve(b);
         
         // If no more reductions, exit
         if (enter == -1) {
@@ -68,7 +68,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         }
         
         // how much each basis variable change if I increase the entering variable
-        Eigen::VectorXd d = Binv * A.col(enter);
+        Eigen::VectorXd d = lu.solve(A.col(enter));
         
         // Find leaving variable
         Eigen::Index leave = -1;
@@ -97,8 +97,9 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     }
     
     std::cerr << "Warning: Hit iteration limit\n";
-    Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
-    Eigen::VectorXd xB = B.inverse() * b;
+    Eigen::PartialPivLU<Eigen::MatrixXd> lu(B);
+    Eigen::VectorXd x  = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd xB = lu.solve(b);
     for (int i = 0; i < m; ++i) x(basis[i]) = std::max(0.0, xB(i));
     return x;
 }

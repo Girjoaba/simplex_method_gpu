@@ -1,3 +1,5 @@
+from interface_gurobi import mps2canonical
+
 import gurobipy as gp
 import numpy as np
 import math
@@ -39,142 +41,9 @@ def convert_and_solve_canonical(mps_file_path, output_file):
     Convert to Canonical Form for Standard Simplex (Big-M).
     Structure: [Original Vars | Surplus Vars | Slack/Artificial Vars (Identity)]
     """
-    print("\n" + "="*60)
-    print("Converting to Big-M Canonical Form (Identity at end):")
-    print("="*60)
-    
-    problem = gp.read(mps_file_path)
-    
-    # 1. Pre-process bounds
-    for var in problem.getVars():
-        if var.VType != gp.GRB.CONTINUOUS:
-            raise ValueError("Non-continuous variables found.")
-        if var.LB != 0:
-            problem.addConstr(var >= var.LB, name=f"lb_{var.VarName}")
-            var.LB = 0
-        if var.UB != gp.GRB.INFINITY and var.UB != math.inf:
-            problem.addConstr(var <= var.UB, name=f"ub_{var.VarName}")
-            var.UB = gp.GRB.INFINITY
-    
-    problem.update()
-    A_raw = problem.getA().todense()
-    constraints = problem.getConstrs()
-    
-    # 2. Split Equalities
-    A_rows = []
-    b_vals = []
-    senses = []
-    
-    for i in range(problem.NumConstrs):
-        constr = constraints[i]
-        if constr.Sense == gp.GRB.EQUAL:
-            # Ax = b -> Ax >= b and Ax <= b
-            A_rows.append(A_raw[i, :])
-            b_vals.append(constr.RHS)
-            senses.append(gp.GRB.GREATER_EQUAL)
-            
-            A_rows.append(A_raw[i, :])
-            b_vals.append(constr.RHS)
-            senses.append(gp.GRB.LESS_EQUAL)
-        else:
-            A_rows.append(A_raw[i, :])
-            b_vals.append(constr.RHS)
-            senses.append(constr.Sense)
-    
-    A_base = np.vstack(A_rows)
-    b = np.array(b_vals)
-    num_constraints = len(b_vals)
-    
-    # 3. Ensure b >= 0
-    for i in range(num_constraints):
-        if b[i] < 0:
-            A_base[i, :] = -A_base[i, :]
-            b[i] = -b[i]
-            if senses[i] == gp.GRB.LESS_EQUAL:
-                senses[i] = gp.GRB.GREATER_EQUAL
-            elif senses[i] == gp.GRB.GREATER_EQUAL:
-                senses[i] = gp.GRB.LESS_EQUAL
-
-    # 4. Construct Matrix Columns
-    # We need the Final structure: [Original | Surplus | Basis (Slack+Artificial)]
-    # The Basis block MUST be an Identity Matrix.
-    
-    surplus_cols = []   # Columns for -1s (surplus)
-    basis_cols = []     # Columns for +1s (slacks and artificials)
-    
-    # Objective penalties
-    # Big M constant (penalty for artificial vars)
-    M = 1e6 
-    c_surplus = []
-    c_basis = []
-    
-    for i in range(num_constraints):
-        # Create column vectors
-        col_vec = np.zeros(num_constraints)
-        col_vec[i] = 1.0
-        
-        if senses[i] == gp.GRB.LESS_EQUAL:
-            # Ax <= b -> Ax + s = b
-            # Slack variable is Basic (+1 coefficient)
-            basis_cols.append(col_vec)
-            c_basis.append(0.0) # Slack has 0 cost
-            
-        elif senses[i] == gp.GRB.GREATER_EQUAL:
-            # Ax >= b -> Ax - e + a = b
-            # 1. Surplus variable (-1) is Non-Basic
-            surplus_cols.append(-col_vec)
-            c_surplus.append(0.0) # Surplus has 0 cost
-            
-            # 2. Artificial variable (+1) is Basic
-            basis_cols.append(col_vec)
-            c_basis.append(-M) # Artificial has -M cost (for Max problem)
-            
-    # Stack matrices
-    # If there are no surplus columns, we handle shape correctly
-    if surplus_cols:
-        A_surplus = np.column_stack(surplus_cols)
-    else:
-        A_surplus = np.zeros((num_constraints, 0))
-        
-    A_basis = np.column_stack(basis_cols)
-    
-    # Final A: [Original, Surplus, Basis]
-    A_final = np.hstack((A_base, A_surplus, A_basis))
-    
-    # Final c
-    c_orig = np.array([var.Obj for var in problem.getVars()])
-    
-    # Handle original minimization/maximization
-    is_minimization = problem.ModelSense == gp.GRB.MINIMIZE
-    if is_minimization:
-        print("Converting minimization to maximization problem.")
-        c_orig = -c_orig
-        # Note: Artifical vars are already -M (bad for Max), which corresponds to +M for Min.
-    
-    c_final = np.concatenate((c_orig, c_surplus, c_basis))
-    
+    A_final, b, c_final, is_minimization = mps2canonical(mps_file_path, output_file)
     m, n = A_final.shape
-    
-    print(f"Final Matrix Size: {m}x{n}")
-    print(f"Rightmost {m}x{m} block is Identity: Verified.")
-    
-    # Write to output file
-    with open(output_file, "w") as f:
-        f.write(f"{m} {n}\n")
-        for i in range(m):
-            # Safe conversion to 1D flat list regardless of matrix vs array
-            row_data = np.asarray(A_final[i, :]).flatten()
-            row_str = " ".join(map(str, row_data))
-            f.write(f"{row_str}\n")
-            
-        # Safe b writing
-        b_data = np.asarray(b).flatten()
-        f.write(" ".join(map(str, b_data)) + "\n")
-        
-        # Safe c writing
-        c_data = np.asarray(c_final).flatten()
-        f.write(" ".join(map(str, c_data)) + "\n")
-    
+
     # --- Verification Step ---
     canonical_model = gp.Model("canonical")
     canonical_model.setParam('OutputFlag', 0)
@@ -219,8 +88,8 @@ if __name__ == "__main__":
     if ground_truth is not None and canonical_result is not None:
         diff = abs(ground_truth - canonical_result)
         print(f"Difference: {diff}")
+        print(f"{'='*60}")
         if diff < 1e-6:
-            print("Results match, almost there :D")
+            print("Results match, sweet :D")
         else:
             print("Results differ, go back to work :(")
-    print(f"{'='*60}")

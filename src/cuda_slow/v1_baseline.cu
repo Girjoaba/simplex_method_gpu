@@ -130,10 +130,9 @@ int main() {
     }
     
     
-    // std::cout << "A: \n" << A << "\n";
-    // std::cout << "b: \n" << b.transpose() << "\n";
-    // std::cout << "c: \n" << c.transpose() << "\n";
-    // std::cout << "\n";
+    // std::cout << "DEBUG: First element of A: " << A(0,0) << "\n";
+    // std::cout << "DEBUG: First element of b: " << b(0) << "\n";
+    // std::cout << "DEBUG: Last element of c: " << c(n-1) << "\n"; // Should be -M or 0
     
     Eigen::VectorXd z = simplex_method(A, b, c, n, m);
     double optimum = c.dot(z);  // Compute c^T * z

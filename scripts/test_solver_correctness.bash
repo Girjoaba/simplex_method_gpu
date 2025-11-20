@@ -135,9 +135,14 @@ done
 echo "===================================="
 echo "Attempted (had matching gt)      : $attempted"
 # echo "GT / mapping errors ⭕           : $glpk_errors"
-echo "Solver errors ⭕                 : $solver_errors"
-# echo "Successfully solved              : $success"
+# echo "Solver errors ⭕                 : $solver_errors"
 echo "Compared                         : $compared"
 echo "Correct ✅                       : $correct"
-echo "Wrong ❌                         : $wrong"
 echo "Experiment dir                   : $EXPERIMENT_DIR"
+echo "===================================="
+if [ "$correct" -eq "$attempted" ]; then
+    echo "All tests passed!"
+else
+    echo "Wrong ❌                         : $wrong"
+    echo "Wrong tests! </3"
+fi

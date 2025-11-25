@@ -43,6 +43,11 @@ bash scripts/test_solver_correctness.bash [YOUR_SOLVER] # defaults to "bin_solve
 Works on Andrei's machine (Ubuntu x64, g++ 13.4, 1050 Ti, Driver 580, CUDA Toolkit 12.9)
 and also on the student cluster (after adding module `cuda/13.0.2`)
 
+# TODO:
+- [ ] include unbounded problems as correct
+- [ ] take larger problems (use gurobi license)
+- [ ] gpu opt
+
 # Optimizations
 ## Algorithmic
 - [ ] Steepest edge

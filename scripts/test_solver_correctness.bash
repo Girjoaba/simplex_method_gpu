@@ -134,7 +134,7 @@ done
 
 echo "===================================="
 echo "Attempted (had matching gt)      : $attempted"
-# echo "GT / mapping errors ⭕           : $glpk_errors"
+echo "GT / mapping errors ⭕           : $glpk_errors"
 # echo "Solver errors ⭕                 : $solver_errors"
 echo "Compared                         : $compared"
 echo "Correct ✅                       : $correct"

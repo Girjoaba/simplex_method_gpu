@@ -12,11 +12,19 @@ set -euo pipefail
 
 make
 
+if [ $# -eq 0 ]; then
+    echo "Error: Missing solver argument."
+    echo "Usage: $0 <path_to_solver_binary>"
+    echo "Example: $0 ./bin_solver/v1_cpu.out"
+    exit 1
+fi
+
+
 INPUT_DIR="./test/input"
 GROUNDTRUTH_DIR="./test/groundtruth"
 EXPERIMENT_DIR="./test/experiment"
 
-SOLVER_BIN="${1:-./bin_solver/solver1.out}"   # optional arg
+SOLVER_BIN="$1"
 
 # =====================================================
 # Filter flag:

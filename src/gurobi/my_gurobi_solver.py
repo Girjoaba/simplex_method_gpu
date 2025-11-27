@@ -1,8 +1,10 @@
 from interface_gurobi import mps2canonical
+from solver_gurobi import solve_canonical
 
 import gurobipy as gp
 import numpy as np
 import math
+import glob
 
 def print_slack_matrix(slack_matrix, filename="slack_matrix.txt"):
     """Print the slack matrix to a file for verification."""
@@ -37,59 +39,45 @@ def solve_with_gurobi(mps_file_path):
         return None
 
 def convert_and_solve_canonical(mps_file_path, output_file):
-    """
-    Convert to Canonical Form for Standard Simplex (Big-M).
-    Structure: [Original Vars | Surplus Vars | Slack/Artificial Vars (Identity)]
-    """
-    A_final, b, c_final, is_minimization = mps2canonical(mps_file_path, output_file)
-    m, n = A_final.shape
-
-    # --- Verification Step ---
-    canonical_model = gp.Model("canonical")
-    canonical_model.setParam('OutputFlag', 0)
-    x = canonical_model.addVars(n, lb=0, ub=gp.GRB.INFINITY, name="x")
+    A_final, b, c_final, is_minimization, obj_offset = mps2canonical(mps_file_path, output_file)
+    status, obj_val, x_vals, iters = solve_canonical(A_final, b, c_final)
     
-    for i in range(m):
-        canonical_model.addConstr(
-            gp.quicksum(A_final[i, j] * x[j] for j in range(n)) == b[i]
-        )
+    if status == gp.GRB.OPTIMAL:
+        corrected_max_obj = obj_val + obj_offset
         
-    canonical_model.setObjective( 
-        gp.quicksum(c_final[j] * x[j] for j in range(n)),
-        gp.GRB.MAXIMIZE
-    )
-    
-    canonical_model.optimize()
-    
-    if canonical_model.status == gp.GRB.OPTIMAL:
-        obj_val = canonical_model.objVal
-        # If Big-M worked, artificial vars should be 0.
-        # For display, we convert back if original was min
         if is_minimization:
-            obj_val = -obj_val
+            final_display_obj = -corrected_max_obj
+        else:
+            final_display_obj = corrected_max_obj
             
-        print(f"Canonical form objective (Validation): {obj_val}")
-        return obj_val
+        print(f"Canonical form objective (Validation): {final_display_obj}")
+        return final_display_obj
     else:
-        print(f"Status: {canonical_model.status}")
+        print(f"Validation Failed. Status: {status}")
         return None
 
 if __name__ == "__main__":
-    mps_file = "test/input/e226.mps"
+    mps_files = glob.glob("test/input/*.mps")
     output_file = "canonical_output.txt"
     
-    ground_truth = solve_with_gurobi(mps_file)
-    canonical_result = convert_and_solve_canonical(mps_file, output_file)
-    
-    # Compare results
-    print(f"\n{'='*60}")
-    print(f"Ground truth objective:   {ground_truth}")
-    print(f"Canonical form objective: {canonical_result}")
-    if ground_truth is not None and canonical_result is not None:
-        diff = abs(ground_truth - canonical_result)
-        print(f"Difference: {diff}")
-        print(f"{'='*60}")
-        if diff < 1e-6:
-            print("Results match, sweet :D")
+    for mps_file in mps_files:
+        ground_truth = solve_with_gurobi(mps_file)
+        canonical_result = convert_and_solve_canonical(mps_file, output_file)
+        
+        failed = False
+        error_msg = ""
+
+        if (ground_truth is None) != (canonical_result is None):
+            failed = True
+            error_msg = f"Solver Status Mismatch (GT: {ground_truth}, Canon: {canonical_result})"
+            
+        elif ground_truth is not None and canonical_result is not None:
+            if not math.isclose(ground_truth, canonical_result, rel_tol=1e-5, abs_tol=1e-5):
+                failed = True
+                diff = abs(ground_truth - canonical_result)
+                error_msg = f"Objective Mismatch (Diff: {diff:.6f} | GT: {ground_truth:.4f} vs Canon: {canonical_result:.4f})"
+
+        if failed:
+            print(f"FAIL [{mps_file}]: {error_msg}")
         else:
-            print("Results differ, go back to work :(")
+            print("Congratz, interface works! :D")

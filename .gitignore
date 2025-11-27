@@ -63,3 +63,6 @@ glop_baseline/build/
 
 # Test experiment outputs
 test/experiment/
+
+*.canonical
+*canonical.offset

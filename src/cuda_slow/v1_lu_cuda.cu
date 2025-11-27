@@ -13,6 +13,44 @@
 // Util. Functions
 // ---------------------------
 
+void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
+    int m = A.rows();
+    int n = A.cols();
+
+    // Geometric Mean Row Scaling
+    for (int i = 0; i < m; i++) {
+        double max_val = 1.0;
+        for (int j = 0; j < n; j++) {
+            max_val = std::max(max_val, std::abs(A(i, j)));
+        }
+
+        if (max_val > 1e-12) {
+            double scale = 1.0 / max_val;
+            A.row(i) *= scale;
+            b(i) *= scale;
+        }
+    }
+
+    // Geometric Mean Column Scaling
+    for (int j = 0; j < n; j++) {
+        double max_val = 1.0;
+        for (int i = 0; i < m; i++) {
+            max_val = std::max(max_val, std::abs(A(i, j)));
+        }
+
+        if (max_val > 1e-12) {
+            double scale = 1.0 / max_val;
+            A.col(j) *= scale;
+            c(j) *= scale; // Must scale the cost to match the new "units"
+        }
+    }
+}
+
+
+// ---------------------------
+// Cuda Util. Functions
+// ---------------------------
+
 #define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
 inline void cudaAssert(cudaError_t code, const char *file, int line)
 {
@@ -273,7 +311,7 @@ int main() {
     for (int i = 0; i < n; i++) {
         std::cin >> c(i);
     }
-    
+    equilibrate(A, b, c);
     
     // std::cout << "DEBUG: First element of A: " << A(0,0) << "\n";
     // std::cout << "DEBUG: First element of b: " << b(0) << "\n";

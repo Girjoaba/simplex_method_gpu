@@ -3,7 +3,8 @@ EIGEN_DIR ?= $(HOME)/eigen-3.4.0
 # Compiler flags
 NVCC        := nvcc
 CXX         := g++
-CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O2
+CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O3
+CPP_FLAGS	:= -march=native -ffp-contract=fast
 CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart
 # LIBS        := -lcublas
 

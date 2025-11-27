@@ -3,7 +3,7 @@
 #include <limits>
 #include <vector>
 
-#include <cuda_runtime.h>
+// #include <cuda_runtime.h>
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
@@ -12,70 +12,99 @@
 // Util. Functions
 // ---------------------------
 
-#define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
-inline void cudaAssert(cudaError_t code, const char *file, int line)
-{
-    if (code != cudaSuccess) {
-        fprintf(stderr, "CUDA Error: %s %s %d\n", cudaGetErrorString(code), file, line);
-        exit(code);
-    }
-}
-
-void print_gpu_info() {
-    int deviceCount;
-    cudaCheckError(cudaGetDeviceCount(&deviceCount));
-
-    if (deviceCount == 0) {
-        std::cout << "No CUDA capable devices found." << std::endl;
-        return;
-    }
-
-    for (int dev = 0; dev < deviceCount; ++dev) {
-        cudaDeviceProp prop;
-        cudaCheckError(cudaGetDeviceProperties(&prop, dev));
-
-        std::cout << "\n==================================================" << std::endl;
-        std::cout << " Device " << dev << ": " << prop.name << std::endl;
-        std::cout << "==================================================" << std::endl;
-
-        // --- 1. General Info ---
-        std::cout << "--- General Information ---" << std::endl;
-        std::cout << "Compute Capability:            " << prop.major << "." << prop.minor << std::endl;
-        std::cout << "Multiprocessors (SMs):         " << prop.multiProcessorCount << std::endl;
-        std::cout << "Concurrent Kernels:            " << (prop.concurrentKernels ? "Yes" : "No") << std::endl;
-        std::cout << "Can Map Host Memory:           " << (prop.canMapHostMemory ? "Yes" : "No") << std::endl;
-        std::cout << "Integrated GPU:                " << (prop.integrated ? "Yes" : "No") << std::endl;
-
-        // --- 2. Memory Info ---
-        std::cout << "\n--- Memory Information ---" << std::endl;
-        std::cout << "Total Global Memory:           " << (double)prop.totalGlobalMem / (1024 * 1024) << " MB" << std::endl;
-        std::cout << "Total Constant Memory:         " << prop.totalConstMem / 1024 << " KB" << std::endl;
-        std::cout << "Shared Memory per Block:       " << prop.sharedMemPerBlock / 1024 << " KB" << std::endl;
-        std::cout << "Registers per Block:           " << prop.regsPerBlock << std::endl;
-        std::cout << "L2 Cache Size:                 " << prop.l2CacheSize / 1024 << " KB" << std::endl;
-
-        // --- 3. Thread & Block Constraints (Crucial for Kernels) ---
-        std::cout << "\n--- Thread & Block Constraints ---" << std::endl;
-        std::cout << "Max Threads per Block:         " << prop.maxThreadsPerBlock << std::endl;
-        std::cout << "Max Threads Dim (Block):       [" << prop.maxThreadsDim[0] << ", " 
-                                                          << prop.maxThreadsDim[1] << ", " 
-                                                          << prop.maxThreadsDim[2] << "]" << std::endl;
-        std::cout << "Max Grid Size:                 [" << prop.maxGridSize[0] << ", " 
-                                                          << prop.maxGridSize[1] << ", " 
-                                                          << prop.maxGridSize[2] << "]" << std::endl;
-        std::cout << "Warp Size:                     " << prop.warpSize << std::endl;
-
-        // --- 4. Clocks & Bus ---
-        std::cout << "\n--- Clock & Bus ---" << std::endl;
-        std::cout << "Memory Bus Width:              " << prop.memoryBusWidth << " bits" << std::endl;
-
-        std::cout << "==================================================\n" << std::endl;
-    }
-}
-
-// void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
-
+// #define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
+// inline void cudaAssert(cudaError_t code, const char *file, int line)
+// {
+//     if (code != cudaSuccess) {
+//         fprintf(stderr, "CUDA Error: %s %s %d\n", cudaGetErrorString(code), file, line);
+//         exit(code);
+//     }
 // }
+
+// void print_gpu_info() {
+//     int deviceCount;
+//     cudaCheckError(cudaGetDeviceCount(&deviceCount));
+
+//     if (deviceCount == 0) {
+//         std::cout << "No CUDA capable devices found." << std::endl;
+//         return;
+//     }
+
+//     for (int dev = 0; dev < deviceCount; ++dev) {
+//         cudaDeviceProp prop;
+//         cudaCheckError(cudaGetDeviceProperties(&prop, dev));
+
+//         std::cout << "\n==================================================" << std::endl;
+//         std::cout << " Device " << dev << ": " << prop.name << std::endl;
+//         std::cout << "==================================================" << std::endl;
+
+//         // --- 1. General Info ---
+//         std::cout << "--- General Information ---" << std::endl;
+//         std::cout << "Compute Capability:            " << prop.major << "." << prop.minor << std::endl;
+//         std::cout << "Multiprocessors (SMs):         " << prop.multiProcessorCount << std::endl;
+//         std::cout << "Concurrent Kernels:            " << (prop.concurrentKernels ? "Yes" : "No") << std::endl;
+//         std::cout << "Can Map Host Memory:           " << (prop.canMapHostMemory ? "Yes" : "No") << std::endl;
+//         std::cout << "Integrated GPU:                " << (prop.integrated ? "Yes" : "No") << std::endl;
+
+//         // --- 2. Memory Info ---
+//         std::cout << "\n--- Memory Information ---" << std::endl;
+//         std::cout << "Total Global Memory:           " << (double)prop.totalGlobalMem / (1024 * 1024) << " MB" << std::endl;
+//         std::cout << "Total Constant Memory:         " << prop.totalConstMem / 1024 << " KB" << std::endl;
+//         std::cout << "Shared Memory per Block:       " << prop.sharedMemPerBlock / 1024 << " KB" << std::endl;
+//         std::cout << "Registers per Block:           " << prop.regsPerBlock << std::endl;
+//         std::cout << "L2 Cache Size:                 " << prop.l2CacheSize / 1024 << " KB" << std::endl;
+
+//         // --- 3. Thread & Block Constraints (Crucial for Kernels) ---
+//         std::cout << "\n--- Thread & Block Constraints ---" << std::endl;
+//         std::cout << "Max Threads per Block:         " << prop.maxThreadsPerBlock << std::endl;
+//         std::cout << "Max Threads Dim (Block):       [" << prop.maxThreadsDim[0] << ", " 
+//                                                           << prop.maxThreadsDim[1] << ", " 
+//                                                           << prop.maxThreadsDim[2] << "]" << std::endl;
+//         std::cout << "Max Grid Size:                 [" << prop.maxGridSize[0] << ", " 
+//                                                           << prop.maxGridSize[1] << ", " 
+//                                                           << prop.maxGridSize[2] << "]" << std::endl;
+//         std::cout << "Warp Size:                     " << prop.warpSize << std::endl;
+
+//         // --- 4. Clocks & Bus ---
+//         std::cout << "\n--- Clock & Bus ---" << std::endl;
+//         std::cout << "Memory Bus Width:              " << prop.memoryBusWidth << " bits" << std::endl;
+
+//         std::cout << "==================================================\n" << std::endl;
+//     }
+// }
+
+void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
+    int m = A.rows();
+    int n = A.cols();
+
+    // Geometric Mean Row Scaling
+    for (int i = 0; i < m; i++) {
+        double max_val = 1.0;
+        for (int j = 0; j < n; j++) {
+            max_val = std::max(max_val, std::abs(A(i, j)));
+        }
+
+        if (max_val > 1e-12) {
+            double scale = 1.0 / max_val;
+            A.row(i) *= scale;
+            b(i) *= scale;
+        }
+    }
+
+    // Geometric Mean Column Scaling
+    for (int j = 0; j < n; j++) {
+        double max_val = 1.0;
+        for (int i = 0; i < m; i++) {
+            max_val = std::max(max_val, std::abs(A(i, j)));
+        }
+
+        if (max_val > 1e-12) {
+            double scale = 1.0 / max_val;
+            A.col(j) *= scale;
+            c(j) *= scale; // Must scale the cost to match the new "units"
+        }
+    }
+}
 
 // ---------------------------
 // Main Algorithm
@@ -182,8 +211,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 
 
 int main() {
-    print_gpu_info();
-
+    // print_gpu_info();
 
     int n, m;
     // starts with n, m
@@ -209,6 +237,7 @@ int main() {
         std::cin >> c(i);
     }
     
+    equilibrate(A, b, c);
     
     // std::cout << "DEBUG: First element of A: " << A(0,0) << "\n";
     // std::cout << "DEBUG: First element of b: " << b(0) << "\n";

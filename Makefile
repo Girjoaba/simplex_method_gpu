@@ -4,8 +4,8 @@ EIGEN_DIR ?= $(HOME)/eigen-3.4.0
 NVCC        := nvcc
 CXX         := g++
 CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O2
-CUDA_FLAGS  := -arch=sm_80
-LIBS        := -lcublas
+CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart
+# LIBS        := -lcublas
 
 # Paths
 SRC_DIR         := src

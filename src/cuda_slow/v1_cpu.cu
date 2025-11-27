@@ -73,7 +73,9 @@ void print_gpu_info() {
     }
 }
 
+// void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
 
+// }
 
 // ---------------------------
 // Main Algorithm
@@ -82,7 +84,7 @@ void print_gpu_info() {
 
 #define MAX_ITERS 200000
 
-const double EPSILON = 1e-10;
+const double EPSILON = 1e-6;
 
 Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
                                const Eigen::VectorXd& b,

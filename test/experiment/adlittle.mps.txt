@@ -26,4 +26,5 @@ Warp Size:                     32
 Memory Bus Width:              192 bits
 ==================================================
 
+Iteration: 122
 Optimum found: -225494.96316238

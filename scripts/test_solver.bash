@@ -35,7 +35,9 @@ SOLVER_BIN="$1"
 #       ./test/input/adlittle.canonical
 #       ./test/groundtruth/adlittle.mps.txt
 # =====================================================
-TARGET_PROBLEM="" # afiro
+
+# bore3d if you want to test numerical stability
+TARGET_PROBLEM=""
 
 # sanity
 if [ ! -x "$SOLVER_BIN" ]; then

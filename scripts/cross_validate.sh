@@ -23,7 +23,7 @@ make -j$(nproc) > /dev/null
 # 2. Find the GT solver
 #    Logic: Look for the binary starting with 'v1_' (e.g., v1_cpu.out or v1_naive.out)
 #    We assume v1 is always the ground truth.
-GT_BIN=$(find "$BIN_DIR" -name "v1_*.out" | head -n 1)
+GT_BIN=$(find "$BIN_DIR" -name "v[0-9]*.out" | sort -V | head -n 1)
 
 if [ -z "$GT_BIN" ]; then
     # Fallback for legacy naming if v1_*.out not found

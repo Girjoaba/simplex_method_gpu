@@ -5,7 +5,7 @@ NVCC        := nvcc
 CXX         := g++
 CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O3
 CPP_FLAGS	:= -march=native -ffp-contract=fast
-CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart
+CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart -lcublas
 # LIBS        := -lcublas
 
 # Paths

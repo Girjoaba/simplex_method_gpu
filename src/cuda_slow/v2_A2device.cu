@@ -9,7 +9,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
-// 149.133s    
+// 134.385s    
 
 // ---------------------------
 // Util. Functions
@@ -131,13 +131,17 @@ struct CusolverResources {
     int *d_info;
     int lwork;          // Workspace size
     int m;              // dimension
+    double *d_A;
+    int *d_basis_ids;
 
-    CusolverResources(int m_dim) : m(m_dim) {
+    CusolverResources(int m_dim, int n_dim) : m(m_dim) {
         cusolverCheckError(cusolverDnCreate(&handle));
 
         cudaCheckError(cudaMalloc((void**)&d_B, sizeof(double) * m * m));
+        cudaCheckError(cudaMalloc((void**)&d_A, sizeof(double) * m * n_dim))
         cudaCheckError(cudaMalloc((void**)&d_x, sizeof(double) * m));
         cudaCheckError(cudaMalloc((void**)&d_ipiv, sizeof(int) * m));
+        cudaCheckError(cudaMalloc((void**)&d_basis_ids, sizeof(int) * m));
         cudaCheckError(cudaMalloc((void**)&d_info, sizeof(int)));
 
         // get workspace size for LU Factorization
@@ -148,13 +152,30 @@ struct CusolverResources {
 
     ~CusolverResources() {
         cudaFree(d_B);
+        cudaFree(d_A);
         cudaFree(d_x);
         cudaFree(d_ipiv);
+        cudaFree(d_basis_ids);
         cudaFree(d_info);
         cudaFree(d_work);
         cusolverDnDestroy(handle);
     }
 };
+
+// Basically an all-gather on creating the matrix A
+__global__ void assemble_basis_kernel(const double* __restrict__ A,
+                                      double* __restrict__ B,
+                                      const int* __restrict__ basis_indices,
+                                      int m, int m_stride_A) {
+
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (row < m && col < m) {
+        int src_col_idx = basis_indices[col];
+        B[row + col * m] = A[row + src_col_idx * m_stride_A];
+    }
+}
 
 // ---------------------------
 // Main Algorithm
@@ -180,7 +201,16 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     Eigen::MatrixXd B(m, m);
     Eigen::VectorXd cB(m);
     
-    CusolverResources gpu(m);
+    CusolverResources gpu(m, n);
+    cudaCheckError(cudaMemcpy(gpu.d_A, A.data(), sizeof(double) * m * n, cudaMemcpyHostToDevice));
+    
+    // Let's say m = 1000
+    dim3 blockSize(32, 8); 
+
+    // (1000 + 32 - 1) / 32 = 32 blocks needed in X
+    // (1000 + 8 - 1)  / 8  = 125 blocks needed in Y
+    dim3 gridSize((m + blockSize.x - 1) / blockSize.x, 
+                (m + blockSize.y - 1) / blockSize.y);
     
     // =============================== |
     // --------- Main Loop ----------- |
@@ -190,15 +220,14 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     int h_info = 0;
     for (int iter = 0; iter < MAX_ITERS; ++iter) {
         
-        for (int j = 0; j < m; ++j) {
-            B.col(j) = A.col(basis[j]); // columns in my basis
-        }
         for (int i = 0; i < m; ++i) {
             cB(i) = c(basis[i]);    // subset of the cost coeff.
         }
 
         // ========= CUDA BEGIN ==========  
-        cudaCheckError(cudaMemcpy(gpu.d_B, B.data(), sizeof(double) * m * m, cudaMemcpyHostToDevice))
+        cudaCheckError(cudaMemcpy(gpu.d_basis_ids, basis.data(), sizeof(int) * m, cudaMemcpyHostToDevice));
+        assemble_basis_kernel<<<gridSize, blockSize>>>(gpu.d_A, gpu.d_B, gpu.d_basis_ids, m, m);
+        cudaCheckError(cudaGetLastError());
         // d_B becomes LU
         cusolverCheckError(cusolverDnDgetrf(
             gpu.handle, m, m, gpu.d_B, m,
@@ -221,7 +250,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         cudaCheckError(cudaMemcpy(lambda.data(), gpu.d_x, sizeof(double) * m, cudaMemcpyDeviceToHost));
         // =========== CUDA END ==========  
 
-        Eigen::VectorXd s      = c - A.transpose() * lambda;    // e[n] <- [1, y] * [-c; A]
+        Eigen::VectorXd s = c - A.transpose() * lambda;    // e[n] <- [1, y] * [-c; A]
         std::vector<char> inBasis(n, 0);
         for (int i = 0; i < m; ++i) inBasis[basis[i]] = 1;
         
@@ -254,7 +283,6 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             }
             return x;
         }
-        
         
         Eigen::VectorXd d(m);
         Eigen::VectorXd colEnter = A.col(enter);

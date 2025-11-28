@@ -1,0 +1,9 @@
+.venv/
+.vscode/
+
+*.out
+**/copy.cu
+
+*.mps
+input/netlib/compressed/
+input/*.txt

@@ -201,6 +201,14 @@ __global__ void assemble_basis_kernel(const double* __restrict__ A,
     }
 }
 
+__global__ void mask_basis_kernel(double *d_s, const int* d_basis_ids, int m) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < m) {
+        int col_idx = d_basis_ids[idx];
+        d_s[col_idx] = -1.0e20;
+    }
+}
+
 // ---------------------------
 // Main Algorithm
 // ---------------------------
@@ -229,6 +237,8 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     cudaCheckError(cudaMemcpy(gpu.d_A, A.data(), sizeof(double) * m * n, cudaMemcpyHostToDevice));
     cudaCheckError(cudaMemcpy(gpu.d_c, c.data(), sizeof(double) * n, cudaMemcpyHostToDevice));
 
+    dim3 block1D(256);
+    dim3 grid1D((m + block1D.x - 1) / block1D.x);
     dim3 blockSize(32, 8);
     dim3 gridSize((m + blockSize.x - 1) / blockSize.x,
                   (m + blockSize.y - 1) / blockSize.y);
@@ -269,26 +279,38 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         cudaCheckError(cudaMemcpy(gpu.d_s, gpu.d_c, sizeof(double) * n, cudaMemcpyDeviceToDevice));
         // Calculate s = -A^T * lambda + s
         cublasCheckError(cublasDgemv(
-            gpu.handle_cublas, CUBLAS_OP_T, m, n,
-            &alpha, gpu.d_A, m, gpu.d_x, 1, &beta, gpu.d_s, 1
+            gpu.handle_cublas, 
+            CUBLAS_OP_T, 
+            m, n,
+            &alpha, 
+            gpu.d_A, 
+            m, 
+            gpu.d_x, 
+            1, 
+            &beta, 
+            gpu.d_s, 
+            1
         ));
-        // =========== CUDA END ==========  
 
+        mask_basis_kernel<<<block1D, grid1D>>>(gpu.d_s, gpu.d_basis_ids, m);
+        cudaCheckError(cudaGetLastError());
+
+        // Use thrust to all_reduce the s_max and enter variable
         thrust::device_ptr<double> s_ptr(gpu.d_s);
         auto max_iter = thrust::max_element(s_ptr, s_ptr + n);
-        double s_max = *max_iter; 
-        int enter = max_iter - s_ptr;
+        double s_max;
+        int enter;
+        int offset = max_iter - s_ptr;
+        cudaCheckError(cudaMemcpy(&s_max, thrust::raw_pointer_cast(&*max_iter), sizeof(double), cudaMemcpyDeviceToHost));
+        enter = offset;
 
-        
-        Eigen::VectorXd xB(m);
-
-        // ========= CUDA BEGIN ==========
         cudaCheckError(cudaMemcpy(gpu.d_x, b.data(), sizeof(double) * m, cudaMemcpyHostToDevice));
         // CUBLAS_OP_N: solve using no-transpose
         cusolverCheckError(cusolverDnDgetrs(
             gpu.handle, CUBLAS_OP_N, m, 1,
             gpu.d_B, m, gpu.d_ipiv, gpu.d_x, m, gpu.d_info 
         ));
+        Eigen::VectorXd xB(m);
         cudaCheckError(cudaMemcpy(xB.data(), gpu.d_x, sizeof(double) * m, cudaMemcpyDeviceToHost));
         // ========== CUDA END ===========  
         

@@ -124,12 +124,15 @@ def create_time_vs_problem_plot(solver_names: List[str], suite_name: str,
         color = SOLVER_COLORS.get(solver_name, f'C{solver_idx}')
         marker = markers[solver_idx % len(markers)]
 
+        # Format solver name for display in legend
+        display_name = {'glop': 'GLOP', 'gurobi': 'Gurobi'}.get(solver_name, solver_name)
+
         # Plot scatter points with error bars (no line connecting them)
         ax.errorbar(sizes, means,
                     yerr=[errors_lower, errors_upper],
                     fmt=marker,  # Marker style, no line
                     color=color,
-                    label=solver_name,
+                    label=display_name,
                     markersize=8,
                     capsize=4,
                     capthick=1.5,
@@ -159,7 +162,7 @@ def create_time_vs_problem_plot(solver_names: List[str], suite_name: str,
 
     # Formatting
     ax.set_xlabel('Problem Size, m×n (log scale)', fontsize=PLOT_STYLE['label_fontsize'])
-    ax.set_ylabel('Mean Time (log scale)', fontsize=PLOT_STYLE['label_fontsize'])
+    ax.set_ylabel('Mean Time\n(log scale)', fontsize=PLOT_STYLE['label_fontsize'], rotation=0, ha='right')
 
     # Title with chip name and repetition/warmup info from suite
     n_problems = len([p for p in problem_names if p in solver_stats.get(solver_names[0], {})])
@@ -168,7 +171,7 @@ def create_time_vs_problem_plot(solver_names: List[str], suite_name: str,
         warmup_info = f', {suite["warmup_iterations"]}x {suite["warmup_problem"]} warmup'
     else:
         warmup_info = ''
-    title_line2 = f'{n_problems} problems, {suite["repetitions"]} reps{warmup_info}'
+    title_line2 = f'{suite["repetitions"]}x each problem (non-deterministic) with CIs reported{warmup_info}'
     ax.set_title(f'{title_line1}\n{title_line2}', fontsize=PLOT_STYLE['title_fontsize'])
 
     ax.tick_params(axis='both', labelsize=PLOT_STYLE['tick_fontsize'])
@@ -285,6 +288,80 @@ def create_iterations_plot(solver_name: str, suite_name: str,
     print(f"Saved iteration plot: {plots_dir}/{plot_name}.{{pdf,png}}")
 
     plt.close()
+
+
+def create_iterations_table(solver_names: List[str], suite_name: str,
+                           measurements_dir: str = 'measurements',
+                           tables_dir: str = 'tables'):
+    """
+    Create markdown table showing iteration counts for each solver/problem combination.
+
+    Since iteration counts are deterministic (verified empirically), we extract a single
+    value per solver/problem combination. Missing data is marked as "N/A".
+
+    Args:
+        solver_names: List of solver names
+        suite_name: Name of suite (determines which problems to include)
+        measurements_dir: Directory with measurement TSV files
+        tables_dir: Directory to save table files
+
+    Output:
+        Saves markdown table to: tables_dir/iterations_{suite_name}.md
+    """
+    suite = SUITES[suite_name]
+    problem_names = suite['problems']
+
+    # Build table data structure: solver -> problem -> iterations
+    table_data = {}
+    for solver_name in solver_names:
+        measurements = load_solver_measurements(solver_name, problem_names, measurements_dir)
+
+        solver_data = {}
+        for problem_name in problem_names:
+            if problem_name in measurements:
+                df = measurements[problem_name]
+                # Iterations are deterministic - just take first row
+                iterations = int(df['iterations'].iloc[0])
+                solver_data[problem_name] = iterations
+            else:
+                solver_data[problem_name] = None  # Missing data
+
+        table_data[solver_name] = solver_data
+
+    # Build markdown table
+    lines = []
+
+    # Header row: | Solver | problem1 (m×n) | problem2 (m×n) | ... |
+    header_cells = ['Solver']
+    for problem_name in problem_names:
+        problem = PROBLEMS[problem_name]
+        header_cells.append(f"{problem_name} ({problem['m']}×{problem['n']})")
+    lines.append('| ' + ' | '.join(header_cells) + ' |')
+
+    # Separator row: |--------|----------------|----------------|-----|
+    separator = ['---'] * len(header_cells)
+    lines.append('| ' + ' | '.join(separator) + ' |')
+
+    # Data rows: one per solver
+    for solver_name in solver_names:
+        row_cells = [solver_name]
+        for problem_name in problem_names:
+            iterations = table_data[solver_name][problem_name]
+            if iterations is not None:
+                row_cells.append(str(iterations))
+            else:
+                row_cells.append('N/A')
+        lines.append('| ' + ' | '.join(row_cells) + ' |')
+
+    # Write to file
+    os.makedirs(tables_dir, exist_ok=True)
+    output_file = os.path.join(tables_dir, f"iterations_{suite_name}.md")
+
+    with open(output_file, 'w') as f:
+        f.write('\n'.join(lines))
+        f.write('\n')
+
+    print(f"Saved iterations table: {output_file}")
 
 
 def print_summary_table(solver_names: List[str], suite_name: str,

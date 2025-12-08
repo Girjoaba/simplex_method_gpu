@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import PROBLEMS, SOLVERS, SUITES
 from tools.run import run_single_benchmark
 from tools.suite import run_suite, list_suites
-from tools.analyze import create_time_vs_problem_plot, print_summary_table
+from tools.analyze import create_time_vs_problem_plot, print_summary_table, create_iterations_table
 from tools.util import save_measurements
 
 
@@ -92,8 +92,16 @@ def cmd_analyze(args):
         show_iterations=(len(args.solvers) == 1)
     )
 
+    # Generate iterations table
+    create_iterations_table(
+        solver_names=args.solvers,
+        suite_name=args.suite,
+        measurements_dir=args.measurements_dir,
+        tables_dir=args.tables_dir
+    )
+
     print()
-    print(f"Analysis complete! Check {args.plots_dir}/ for plots.")
+    print(f"Analysis complete! Check {args.plots_dir}/ for plots and {args.tables_dir}/ for tables.")
 
 
 def cmd_list(args):
@@ -132,6 +140,8 @@ def main():
                        help='Directory to store/read measurements (default: measurements/)')
     parser.add_argument('--plots-dir', default='plots',
                        help='Directory to save plots (default: plots/)')
+    parser.add_argument('--tables-dir', default='tables',
+                       help='Directory to save tables (default: tables/)')
     parser.add_argument('--repetitions', type=int, default=100,
                        help='Number of repetitions per problem (default: 100)')
 

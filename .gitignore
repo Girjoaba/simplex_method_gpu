@@ -55,7 +55,10 @@ __pycache__/
 # Benchmark outputs
 benchmarks/measurements/
 benchmarks/plots/
+benchmarks/tables/
 benchmarks/*.log
+
+benchmarks/.DS_Store
 
 # Build artifacts
 glop_baseline/build/

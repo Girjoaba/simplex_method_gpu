@@ -10,6 +10,31 @@ args.add_argument(
     help="Path to the MPS file to be converted.",
 )
 
+def solve_canonical(A, b, c):
+    """
+    Shared core logic to solve Max c^T x s.t. Ax = b, x >= 0
+    Returns (status, obj_val, x_vector, iter_count)
+    """
+    m, n = A.shape
+    
+    # Create Model
+    model = gp.Model("canonical_core")
+    model.Params.OutputFlag = 0
+    
+    # We use MVar for efficient dense matrix handling
+    x = model.addMVar(n, lb=0.0, name="x")
+
+    # Constraints: A x = b
+    model.addConstr(A @ x == b, name="eq_constrs")
+    model.setObjective(c @ x, gp.GRB.MAXIMIZE)
+    model.optimize()
+    
+    # Extract results if optimal
+    if model.Status == gp.GRB.OPTIMAL:
+        return model.Status, model.ObjVal, x.X, model.IterCount
+    else:
+        return model.Status, None, None, 0
+
 
 def solve_canonical_file(path):
     # Read file
@@ -25,32 +50,17 @@ def solve_canonical_file(path):
         b = np.array(list(map(float, f.readline().split())), dtype=float)
         c = np.array(list(map(float, f.readline().split())), dtype=float)
 
-    model = gp.Model("canonical_lp")
-    model.Params.OutputFlag = 0  # silence solver if you like
+        status, obj_val, x_vals, iters = solve_canonical(A, b, c)
 
-    # Variables: here I assume nonnegativity (lb=0). If your canonical
-    # form allows negative variables, use lb=-gp.GRB.INFINITY instead.
-    x = model.addMVar(n, lb=0.0, name="x")
-
-    # Constraints: A x = b
-    for i in range(m):
-        model.addConstr(A[i, :] @ x == b[i], name=f"row_{i}")
-
-    # Objective: maximize c^T x
-    model.setObjective(c @ x, gp.GRB.MAXIMIZE)
-
-    model.optimize()
-
-    if model.Status == gp.GRB.OPTIMAL:
-        # Output format required by benchmark infrastructure
-        print(f"Optimum found: {model.ObjVal:.16f}")
-        for i in range(len(x.X)):
-            print(f"x[{i}] = {x.X[i]:.16e}")
-        print(f"Iterations: {int(model.IterCount)}")
-    else:
-        # Handle non-optimal status
-        print(f"Solver failed with status: {model.Status}", file=sys.stderr)
-        sys.exit(1)
+        if status == gp.GRB.OPTIMAL:
+            # Output format required by benchmark infrastructure
+            print(f"Optimum found: {obj_val:.16f}")
+            for i in range(len(x_vals)):
+                print(f"x[{i}] = {x_vals[i]:.16e}")
+            print(f"Iterations: {int(iters)}")
+        else:
+            print(f"Solver failed with status: {status}", file=sys.stderr)
+            sys.exit(1)
 
 if __name__ == "__main__":
     parsed_args = args.parse_args()

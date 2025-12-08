@@ -69,3 +69,6 @@ test/experiment/
 
 # Generated offset files
 test/input/*.offset
+
+*.canonical
+*canonical.offset

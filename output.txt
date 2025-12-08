@@ -3,17 +3,20 @@
  CROSS VALIDATION SUITE
  Ground Truth Solver: v1_lu_cuda.out
  Test Set:            Files in ./test/groundtruth
- Solvers Found:       4
+ Solvers Found:       7
 ============================================================
 
 [Phase 1] Running Ground Truth (v1_lu_cuda.out)...
-  -> Processed 39 files in 152.759s
+  -> Processed 39 files in 225.238s
 
-Solver                         | Status     | Correct    | Errors     | Time (Total)   
---------------------------------------------------------------------------------------
-v1_lu_cuda.out (GT)            | REF        | -          | -          | 152.759s       
-v2_A2device.out                | PASS ✅   | 39/39      | 0          | 136.51s        
-v3_cublas_mvm.out              | FAIL ❌   | 38/39      | 1          | 89.9772s       
-v4_thrust.out                  | FAIL ❌   | 35/39      | 4          | 115.524s       
+Solver                              | Status     | Correct    | Errors     | Time (Total)   
+-------------------------------------------------------------------------------------------
+v1_lu_cuda.out (GT)                 | REF        | -          | -          | 225.238s       
+v2_A2device.out                     | PASS ✅   | 39/39      | 0          | 212.804s       
+v3_cublas_mvm.out                   | FAIL ❌   | 38/39      | 1          | 142.305s       
+v5_thrust_max_elem.out              | FAIL ❌   | 38/39      | 1          | 141.688s       
+v6_update_curr_pos.out              | PASS ✅   | 39/39      | 0          | 108.438s       
+v7_thrust_ratio.out                 | PASS ✅   | 39/39      | 0          | 103.315s       
+v8_full_gpu.out                     | PASS ✅   | 39/39      | 0          | 100.59s        
 -----------------------------------------------------------------------------
 Done.

@@ -65,3 +65,6 @@ glop_baseline/build/
 
 # Test experiment outputs
 test/experiment/
+
+# Generated offset files
+test/input/*.offset

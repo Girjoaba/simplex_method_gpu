@@ -55,12 +55,15 @@ def run_warmup(suite, solver_name: str, verbose: bool = True) -> Tuple[float, fl
         # Run solver and measure time
         start_time = time.perf_counter()
 
-        result = subprocess.run(
-            [solver['binary'], warmup_problem['file']],
-            capture_output=True,
-            text=True,
-            timeout=300
-        )
+        # Use stdin for input (matching run.py behavior)
+        with open(warmup_problem['file'], 'r') as f:
+            result = subprocess.run(
+                [solver['binary']],
+                stdin=f,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
 
         end_time = time.perf_counter()
         elapsed = end_time - start_time
@@ -129,10 +132,10 @@ def run_suite(suite_name: str, measurements_dir: str = 'measurements',
         print(f"Repetitions per problem: {suite['repetitions']}")
         print("=" * 70)
 
-    # Run warmup phase if configured
+    # Run warmup phase if configured (use first solver only)
     if 'warmup_iterations' in suite and suite['warmup_iterations'] > 0:
-        for solver_name in suite['solvers']:
-            run_warmup(suite, solver_name, verbose=verbose)
+        first_solver = suite['solvers'][0]
+        run_warmup(suite, first_solver, verbose=verbose)
 
     if verbose:
         print()

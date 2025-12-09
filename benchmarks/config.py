@@ -82,6 +82,47 @@ SOLVERS = {
         'binary': os.path.join(PROJECT_ROOT, 'src/gurobi/gurobi_canonical'),
         'description': 'Gurobi 11.0.3 (Python API, dual simplex)',
         'type': 'serial'
+    },
+    # cuda_slow/ solvers
+    'cuda_slow_v1_cpu': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v1_cpu.out'),
+        'description': 'CPU Eigen baseline (double)',
+        'type': 'serial'
+    },
+    'cuda_slow_v1_lu': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v1_lu_cuda.out'),
+        'description': 'cuSolver LU (double)',
+        'type': 'parallel'
+    },
+    'cuda_slow_v2': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v2_A2device.out'),
+        'description': 'Matrix A on device (double)',
+        'type': 'parallel'
+    },
+    'cuda_slow_v3': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v3_cublas_mvm.out'),
+        'description': 'cuBLAS matrix-vector (double)',
+        'type': 'parallel'
+    },
+    'cuda_slow_v5': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v5_thrust_max_elem.out'),
+        'description': 'Thrust max_element (double)',
+        'type': 'parallel'
+    },
+    'cuda_slow_v6': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v6_update_curr_pos.out'),
+        'description': 'Optimized position updates (double)',
+        'type': 'parallel'
+    },
+    'cuda_slow_v7': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v7_thrust_ratio.out'),
+        'description': 'Thrust transform_reduce (double)',
+        'type': 'parallel'
+    },
+    'cuda_slow_v8': {
+        'binary': os.path.join(PROJECT_ROOT, 'bin_solver/v8_full_gpu.out'),
+        'description': 'Full GPU parallelization (double)',
+        'type': 'parallel'
     }
     # Future solvers:
     # 'cuda_v1': {
@@ -127,6 +168,16 @@ SUITES = {
         'repetitions': 100,
         'warmup_iterations': 100,
         'warmup_problem': 'afiro'  # Median-sized problem (27×51, size 1377)
+    },
+    'cuda_slow_progression': {
+        'description': 'Compare cuda_slow optimization progression',
+        'problems': ['sample', 'sample3', 'afiro', 'adlittle', 'e226'],
+        'solvers': ['cuda_slow_v1_cpu', 'cuda_slow_v1_lu', 'cuda_slow_v2',
+                    'cuda_slow_v3', 'cuda_slow_v5', 'cuda_slow_v6',
+                    'cuda_slow_v7', 'cuda_slow_v8', 'glop'],
+        'repetitions': 100,
+        'warmup_iterations': 50,
+        'warmup_problem': 'afiro'
     }
 }
 
@@ -148,5 +199,14 @@ SOLVER_COLORS = {
     'glop': '#2E86AB',      # Blue
     'gurobi': '#A23B72',    # Purple
     'cuda_v1': '#F18F01',   # Orange
-    'cuda_v2': '#C73E1D'    # Red
+    'cuda_v2': '#C73E1D',   # Red
+    # cuda_slow solvers
+    'cuda_slow_v1_cpu': '#E63946',   # Red
+    'cuda_slow_v1_lu': '#F4A261',    # Orange
+    'cuda_slow_v2': '#E9C46A',       # Yellow
+    'cuda_slow_v3': '#2A9D8F',       # Teal
+    'cuda_slow_v5': '#264653',       # Dark blue
+    'cuda_slow_v6': '#8338EC',       # Purple
+    'cuda_slow_v7': '#FF006E',       # Pink
+    'cuda_slow_v8': '#3A86FF'        # Blue
 }

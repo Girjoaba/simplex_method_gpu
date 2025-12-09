@@ -38,11 +38,14 @@ BASENAMES := $(basename $(notdir $(SRCS)))
 # 3. Generate output targets (e.g., bin_solver/v1_cpu.out)
 TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(BASENAMES))
 
+# CPU solver target (Eigen-based, no CUDA)
+CPU_TARGET := $(BIN_SOLVER_DIR)/v1_cpu.out
+
 # =============================================== |
 # ------------------ Targets -------------------- |
 # =============================================== |
 
-all: $(TARGETS)
+all: $(TARGETS) $(CPU_TARGET)
 
 # Build GLPK tools
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
@@ -54,6 +57,11 @@ $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 $(BIN_SOLVER_DIR)/%.out: $(SRC_CUDA_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $< -o $@ $(LIBS)
+
+# === CPU Solver (Eigen-based, no CUDA) ===
+$(CPU_TARGET): $(SRC_CUDA_DIR)/v1_cpu.cpp
+	@mkdir -p $(BIN_SOLVER_DIR)
+	$(CXX) $(CXXFLAGS) $(CPP_FLAGS) $< -o $@
 
 # === Run Rules ===
 # Allows running specific versions like: make run-v1_cpu

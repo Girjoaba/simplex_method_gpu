@@ -116,9 +116,14 @@ def aggregate_statistics(measurements_df: pd.DataFrame) -> Dict[str, float]:
     # Confidence interval
     ci_lower, ci_upper = calculate_bootstrap_ci(times, confidence=0.95)
 
-    # Iteration statistics
-    mean_iters = np.mean(iterations)
-    median_iters = np.median(iterations)
+    # Iteration statistics (handle None values)
+    valid_iters = [x for x in iterations if x is not None]
+    if valid_iters:
+        mean_iters = np.mean(valid_iters)
+        median_iters = np.median(valid_iters)
+    else:
+        mean_iters = None
+        median_iters = None
 
     return {
         'mean': mean_time,

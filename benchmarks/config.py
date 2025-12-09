@@ -317,52 +317,62 @@ SOLVERS = {
         "binary": os.path.join(PROJECT_ROOT, "glop_baseline/build/glop_canonical"),
         "description": "Google GLOP (serial, revised simplex)",
         "type": "serial",
+        "input_method": "file_arg",
     },
     "gurobi": {
         "binary": os.path.join(PROJECT_ROOT, "src/gurobi/gurobi_canonical"),
         "description": "Gurobi 11.0.3 (Python API, dual simplex)",
         "type": "serial",
+        "input_method": "file_arg",
     },
-    # cuda_slow/ solvers
+    # cuda_slow/ solvers (read from stdin)
     "cuda_slow_v1_cpu": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v1_cpu.out"),
         "description": "CPU Eigen baseline (double)",
         "type": "serial",
+        "input_method": "stdin",
     },
     "cuda_slow_v1_lu": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v1_lu_cuda.out"),
         "description": "cuSolver LU (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     "cuda_slow_v2": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v2_A2device.out"),
         "description": "Matrix A on device (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     "cuda_slow_v3": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v3_cublas_mvm.out"),
         "description": "cuBLAS matrix-vector (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     "cuda_slow_v5": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v5_thrust_max_elem.out"),
         "description": "Thrust max_element (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     "cuda_slow_v6": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v6_update_curr_pos.out"),
         "description": "Optimized position updates (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     "cuda_slow_v7": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v7_thrust_ratio.out"),
         "description": "Thrust transform_reduce (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     "cuda_slow_v8": {
         "binary": os.path.join(PROJECT_ROOT, "bin_solver/v8_full_gpu.out"),
         "description": "Full GPU parallelization (double)",
         "type": "parallel",
+        "input_method": "stdin",
     },
     # Future solvers:
     # 'cuda_v1': {

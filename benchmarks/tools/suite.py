@@ -55,11 +55,20 @@ def run_warmup(suite, solver_name: str, verbose: bool = True) -> Tuple[float, fl
         # Run solver and measure time
         start_time = time.perf_counter()
 
-        # Use stdin for input (matching run.py behavior)
-        with open(warmup_problem['file'], 'r') as f:
+        # Run solver based on input_method
+        input_method = solver.get('input_method', 'stdin')
+        if input_method == 'stdin':
+            with open(warmup_problem['file'], 'r') as f:
+                result = subprocess.run(
+                    [solver['binary']],
+                    stdin=f,
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+        else:  # file_arg
             result = subprocess.run(
-                [solver['binary']],
-                stdin=f,
+                [solver['binary'], warmup_problem['file']],
                 capture_output=True,
                 text=True,
                 timeout=300
@@ -179,7 +188,8 @@ def run_suite(suite_name: str, measurements_dir: str = 'measurements',
                     problem_name=problem_name,
                     expected_optimum=problem['expected_optimum'],
                     num_repetitions=suite['repetitions'],
-                    verbose=False  # We'll print our own progress
+                    verbose=False,  # We'll print our own progress
+                    input_method=solver.get('input_method', 'stdin')
                 )
 
                 # Add problem metadata

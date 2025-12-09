@@ -23,7 +23,7 @@ from tools.util import parse_solver_output, validate_optimum, format_time, forma
 
 def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
                      expected_optimum: float, num_repetitions: int = 100,
-                     verbose: bool = True) -> List[Dict]:
+                     verbose: bool = True, input_method: str = 'stdin') -> List[Dict]:
     """
     Run solver on a single problem multiple times and collect measurements.
 
@@ -34,6 +34,7 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
         expected_optimum: Expected optimal value (for validation)
         num_repetitions: Number of times to run solver
         verbose: Print progress information
+        input_method: How to pass problem to solver ('stdin' or 'file_arg')
 
     Returns:
         List of measurement dictionaries, one per run
@@ -59,10 +60,18 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
         start_time = time.perf_counter()
 
         try:
-            with open(problem_file, 'r') as f:
+            if input_method == 'stdin':
+                with open(problem_file, 'r') as f:
+                    result = subprocess.run(
+                        [solver_binary],
+                        stdin=f,
+                        capture_output=True,
+                        text=True,
+                        timeout=300  # 5 minute timeout
+                    )
+            else:  # file_arg
                 result = subprocess.run(
-                    [solver_binary],
-                    stdin=f,
+                    [solver_binary, problem_file],
                     capture_output=True,
                     text=True,
                     timeout=300  # 5 minute timeout
@@ -143,7 +152,8 @@ def run_single_benchmark(solver_name: str, problem_name: str,
         problem_name=problem_name,
         expected_optimum=problem['expected_optimum'],
         num_repetitions=num_repetitions,
-        verbose=verbose
+        verbose=verbose,
+        input_method=solver.get('input_method', 'stdin')
     )
 
     # Add problem metadata

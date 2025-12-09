@@ -59,12 +59,14 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
         start_time = time.perf_counter()
 
         try:
-            result = subprocess.run(
-                [solver_binary, problem_file],
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout
-            )
+            with open(problem_file, 'r') as f:
+                result = subprocess.run(
+                    [solver_binary],
+                    stdin=f,
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout
+                )
         except subprocess.TimeoutExpired:
             raise RuntimeError(f"Solver timed out on {problem_name} (run {run_id})")
 
@@ -78,7 +80,7 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
         # Parse output
         optimum, iterations = parse_solver_output(result.stdout)
 
-        if optimum is None or iterations is None:
+        if optimum is None:
             raise RuntimeError(f"Failed to parse solver output on {problem_name} (run {run_id}):\n{result.stdout}")
 
         # Validate correctness

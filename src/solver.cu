@@ -1,321 +1,298 @@
-#include <algorithm>
-#include <cmath>
-#include <cstdlib>
+#include <cfloat>
+
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
-#include <format>
-#include <iomanip>
+#include <cusolverDn.h>
+
+#include <Eigen/Dense>
+
 #include <iostream>
+#include <iomanip>
+#include <vector>
+
 #include <thrust/device_ptr.h>
 #include <thrust/extrema.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/pair.h>
+
 #include <utility>
 
-using real = double;
+#define MAX_ITERS 5000
 
-constexpr int BS_1D = 256;
-constexpr int BS_2D = 16;
-constexpr int MAX_ITER = 5000;
-constexpr real EPS = 1E-8;
-constexpr real one = 1.0, minus_one = -1.0, zero = 0.0;
+constexpr double OPTIMALITY_TOL = 1e-6;
+constexpr double PIVOT_TOL      = 1e-5;
 
-#define cuda_malloc_host(ptr, n) cuda_malloc_host_impl(&ptr, n, #ptr)
-#define cuda_malloc(d_ptr, n) cuda_malloc_impl(&d_ptr, n, #d_ptr)
-#define cuda_memcpy(dst, src, n, kind) cuda_memcpy_impl(dst, src, n, kind, #dst)
-#define load_matrix(ptr, m, n) load_matrix_impl(ptr, m, n, #ptr)
+constexpr double ONE = 1.0;
+constexpr double MINUS_ONE = -1.0;
 
-template<typename T>
-struct PtrAlloc {
-	T*& ptr;
-	int size;
-};
+constexpr int BLOCK_DIM_1D = 256;
+constexpr int BLOCK_DIM_X = 16;
+constexpr int BLOCK_DIM_Y = 16;
 
-enum class SolveStatus {
-	MaxIter,
-	OptimumFound,
-	Unbounded
-};
-
-__host__ __device__ __forceinline__
-constexpr int AT(int i, int j, int s) { return i * s + j; }
-
-__host__ __device__ __forceinline__
-constexpr int R2C(int i, int j, int m) { return j * m + i; }
-
-__host__ __device__ __forceinline__
-constexpr int num_blocks(int n, int BS) { return (n + BS - 1) / BS; }
+enum class SolveStatus { MaxIter, OptimumFound, Unbounded };
 
 /* ===================== UTILITIES ===================== */
 
-template<typename T>
-void cuda_malloc_host_impl(T** ptr, int n, const char* name) {
-	cudaError_t err = cudaMallocHost((void**)ptr, n * sizeof(T));
-	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMallocHost failed for {}: {}\n", name, cudaGetErrorString(err));
-		std::exit(EXIT_FAILURE);
-	}
-}
+void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b) {
+	int m = A.rows();
+	int n = A.cols();
 
-template <typename T>
-void cuda_malloc_impl(T** d_ptr, int n, const char* name) {
-	cudaError_t err = cudaMalloc((void**)d_ptr, n * sizeof(T));
-	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMalloc failed for {}: {}\n", name, cudaGetErrorString(err));
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-template <typename T>
-void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const char* name) {
-	cudaError_t err = cudaMemcpy((void*)dst, (void*)src, size * sizeof(T), kind);
-	if (err != cudaSuccess) {
-		std::cerr << std::format("cudaMemcpy failed for {}: {}\n", name, cudaGetErrorString(err));
-		std::exit(EXIT_FAILURE);
-	}
-}
-
-template<typename T>
-void load_matrix_impl(T* a, int m, int n, const char* name) {
 	for (int i = 0; i < m; ++i) {
-		for (int j = 0; j < n; ++j) {
-			if (!(std::cin >> a[R2C(i, j, m)])) {
-				std::cerr << std::format("Failed to read ({},{}) for {}\n", i, j, name);
-				std::exit(EXIT_FAILURE);
-			}
+		double max_val = 1.0;
+		for (int j = 0; j < n; ++j)
+			max_val = std::max(max_val, std::abs(A(i, j)));
+
+		if (max_val > 1.0) {
+			double scale = 1.0 / max_val;
+			A.row(i) *= scale;
+			b(i) *= scale;
 		}
 	}
 }
 
-template <typename T>
-void swap_values(T* a, T* b, T* tmp, int p, int q) {
-	cudaMemcpy(tmp, a + q, sizeof(T), cudaMemcpyDeviceToDevice);
-	cudaMemcpy(a + q, b + p, sizeof(T), cudaMemcpyDeviceToDevice);
-	cudaMemcpy(b + p, tmp, sizeof(T), cudaMemcpyHostToDevice);
+#define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
+inline void cudaAssert(cudaError_t code, const char *file, int line) {
+	if (code != cudaSuccess) {
+		fprintf(stderr, "CUDA Error: %s %s %d\n", cudaGetErrorString(code), file, line);
+		exit(code);
+	}
 }
+#define cusolverCheckError(ans) { cusolverAssert((ans), __FILE__, __LINE__); }
+inline void cusolverAssert(cusolverStatus_t code, const char *file, int line) {
+	if (code != CUSOLVER_STATUS_SUCCESS) {
+		fprintf(stderr, "cuSOLVER Error: %d %s %d\n", code, file, line);
+		exit(code);
+	}
+}
+#define cublasCheckError(ans) { cublasAssert((ans), __FILE__, __LINE__); }
+void cublasAssert(cublasStatus_t code, const char *file, int line) {
+	if (code != CUBLAS_STATUS_SUCCESS) {
+		fprintf(stderr, "cuBLAS Error: %d %s %d\n", code, file, line);
+		exit(code);
+	}
+}
+#define cuda_malloc(d_ptr, n) { cuda_malloc_impl(&d_ptr, n, #d_ptr); }
+template <typename T>
+void cuda_malloc_impl(T** d_ptr, int n, const char* name) {
+	cudaError_t code = cudaMalloc((void**)d_ptr, n * sizeof(T));
+	if (code != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed for %s: %s\n", name, cudaGetErrorString(code));
+		exit(code);
+	}
+}
+#define cuda_memcpy(dst, src, n, kind) cuda_memcpy_impl(dst, src, n, kind, #dst)
+template <typename T>
+void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const char* name) {
+	cudaError_t code = cudaMemcpy((void*)dst, (void*)src, size * sizeof(T), kind);
+	if (code != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed for %s: %s\n", name, cudaGetErrorString(code));
+		exit(code);
+	}
+}
+
+__device__ __forceinline__
+constexpr int div_up(int n, int block_dim) { return (n + block_dim - 1) / block_dim; }
+
+/* ===================== DEVICE RESOURCES ===================== */
+
+template<typename T>
+struct PtrAlloc { T*& ptr; int size; };
+
+struct DeviceResources {
+	cusolverDnHandle_t handle;
+	cublasHandle_t handle_cublas;
+
+	double *d_A, *d_xB, *d_c;
+	double *d_d;   // direction
+	double *d_rc;  // reduced cost
+	int m, *d_B_ids;
+
+	double *d_B, *d_work, *d_y;
+	int lwork, *d_ipiv, *d_info;
+
+	std::vector<PtrAlloc<double>> double_allocs;
+	std::vector<PtrAlloc<int>> int_allocs;
+
+	DeviceResources(int m, int n) : m(m),
+		double_allocs {{d_A, m * n}, {d_B, m * m}, {d_y, m}, {d_xB, m}, {d_d, m}, {d_c, n}, {d_rc, n}},
+		int_allocs {{d_ipiv, m}, {d_B_ids, m}, {d_info, 1}} {
+
+		cusolverCheckError(cusolverDnCreate(&handle));
+		cublasCheckError(cublasCreate(&handle_cublas));
+
+		for (auto &[ptr, size] : double_allocs) cuda_malloc(ptr, size);
+		for (auto &[ptr, size] : int_allocs)    cuda_malloc(ptr, size);
+
+		cusolverCheckError(cusolverDnDgetrf_bufferSize(handle, m, m, d_B, m, &lwork));
+		cuda_malloc(d_work, lwork);
+	}
+
+	~DeviceResources() {
+		for (auto &[ptr,_] : double_allocs) cudaFree(ptr);
+		for (auto &[ptr,_] : int_allocs)    cudaFree(ptr);
+		cusolverDnDestroy(handle);
+		cublasDestroy(handle_cublas);
+	}
+};
 
 /* ===================== KERNELS ===================== */
 
-__global__ void init_identity(real* I, int m) {
+// how much do restrict and const help?
+__global__ void assemble_basis(const double* __restrict__ A, double* __restrict__ B, const int* __restrict__ B_ids, int m) {
+	int j = blockIdx.x * blockDim.x + threadIdx.x;
 	int i = blockIdx.y * blockDim.y + threadIdx.y;
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
+
 	if (i < m && j < m)
-		I[R2C(i,j,m)] = (i == j) ? 1.0 : 0.0;
+		B[i + j * m] = A[i + B_ids[j] * m];
 }
 
-__global__ void init_indices(int* N_ixs, int artificial_end) {
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	if (j < artificial_end) N_ixs[j] = j;
-}
-
-__global__ void init_cost_phase_one(real* c_phase_one, int artificial_start, int artificial_end) {
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	if (j < artificial_end)
-		c_phase_one[j] = (j < artificial_start) ? 0.0 : -1.0;
-}
-
-__global__ void init_cost_phase_two(int* N_ixs, int* B_ixs, real* c, real* c_N, real* c_B, int m, int new_end) {
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	if (j < m)       c_B[j] = c[B_ixs[j]];
-	if (j < new_end) c_N[j] = c[N_ixs[j]];
-}
-
-__global__ void compute_theta(real* x_B, real* alpha, real* theta, int m) {
-	int j = blockIdx.x * blockDim.x + threadIdx.x;
-	if (j < m)
-		theta[j] = alpha[j] > 0.0 ? x_B[j] / alpha[j] : INFINITY;
-}
-
-__global__ void compute_E_q(real* E, real* alpha, int m, int q, real alpha_q) {
+__global__ void mask_basis(double *rc, const int* B_ids, int m) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < m)
-		E[R2C(i, q, m)] = (i != q) ? (-alpha[i] / alpha_q) : (1.0 / alpha_q);
+		rc[B_ids[i]] = -1.0e20;
 }
 
-/* ===================== TRANSITION ===================== */
+// learn the maths; is it better to use LU?
+__global__ void update_xB(double* __restrict__ xB, const double* d, int leave, double theta_min, int m) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < m)
+		xB[i] = (i != leave) ? (xB[i] - theta_min * d[i]) : theta_min;
+}
 
-void transition(real* d_N, int* d_N_ixs, int* d_B_ixs, real* c, real* d_c, real* d_c_N,
-	real* d_c_B, int m, int identity_start, int artificial_start, int artificial_end
-) {
-	std::vector<int> N_ixs; N_ixs.resize(identity_start);
-	cudaMemcpy(N_ixs.data(), d_N_ixs, identity_start * sizeof(int), cudaMemcpyDeviceToHost);
+__global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < m)
+		cB[i] = c[B_ids[i]];
+}
 
-	// make the non-artificial columns of N contiguous in memory and update the indices
-	int i = 0, new_end = identity_start - (artificial_end - artificial_start);
-	for (int j = new_end; j < identity_start; ++j)	{
-		if (N_ixs[j] >= artificial_start) continue;
-		while (N_ixs[i] < artificial_start) ++i;
-		cudaMemcpy(d_N + i * m, d_N + j * m, m * sizeof(real), cudaMemcpyDeviceToDevice);
-		N_ixs[i++] = N_ixs[j];
+/* ===================== THRUST ===================== */
+
+struct RatioTestUnaryOp {
+	const double *xB, *d;
+
+	__device__ thrust::pair<double, int> operator()(int i) const {
+		double d_i = d[i];
+		return d_i > PIVOT_TOL ? thrust::make_pair(xB[i] / d_i, i) : thrust::make_pair(DBL_MAX, -1);
 	}
-	cudaMemcpy(d_N_ixs, N_ixs.data(), new_end * sizeof(int), cudaMemcpyHostToDevice);
+};
 
-	cuda_memcpy(d_c, c, artificial_start, cudaMemcpyHostToDevice);
-	init_cost_phase_two<<<num_blocks(std::max(m, new_end), BS_1D), BS_1D>>>
-		(d_N_ixs, d_B_ixs, d_c, d_c_N, d_c_B, m, new_end);
-	cudaDeviceSynchronize();
-}
+struct MinPairOp {
+	__device__ thrust::pair<double, int> operator()
+	(const thrust::pair<double, int>& a, const thrust::pair<double, int>& b) const {
+		if (a.first < b.first) return a;
+		if (a.first > b.first) return b;
+		return (a.second < b.second) ? a : b;
+	}
+};
 
-/* ====================== CORE ====================== */
+/* ===================== CORE LOGIC ===================== */
 
-std::pair<real, SolveStatus> core(
-	cublasHandle_t handle,
-	real* d_B, real* d_N, real* d_b, real*& d_B_inv, real* d_c_B,
-	real* d_c_N, real* d_x_B, real* d_y, real* d_e, real* d_alpha,
-	real* d_theta, real* d_swap_column, real*& d_new_B_inv, real* d_E,
-	int* d_B_ixs, int* d_N_ixs, real* d_swap_real, int* d_swap_int,
-	thrust::device_ptr<real> thrust_e,
-	thrust::device_ptr<real> thrust_alpha,
-	thrust::device_ptr<real> thrust_theta,
-	int m, int n, int blocks_1d_m, int blocks_2d_m
-) {	// n := # of non-basic columns
+SolveStatus core(
+	DeviceResources& gpu,
+	int m, int n,
+	const dim3 block_dim, const dim3 grid_dim_1D, const dim3 grid_dim
+) {
 
-	int i = 0, p, q;
 	auto status = SolveStatus::MaxIter;
-	thrust::device_ptr<real> iterator;
-	real alpha_q;
+	int iteration;
 
-	do {
-		// y = c_B * B_inv
-		cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			1, m, m, &one, d_c_B, 1, d_B_inv, m, &zero, d_y, 1);
-		// e = y * N 
-		cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			1, n, m, &one, d_y, 1, d_N, m, &zero, d_e, 1);
-		// e = e - c_N
-		cublasDaxpy(handle, n, &minus_one, d_c_N, 1, d_e, 1);
+	for (iteration = 1; iteration <= MAX_ITERS; ++iteration) {
+		// factorise B
+		assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
+		cudaDeviceSynchronize();
+		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
 
-		iterator = thrust::min_element(thrust_e, thrust_e + n);
-		p = iterator - thrust_e;
-		if (*iterator > -EPS) {
+		// solve for y: B^T * y^T = cB^T
+		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_y, gpu.d_c, gpu.d_B_ids, m);
+		cudaDeviceSynchronize();
+		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_y, m, gpu.d_info));
+
+		// compute rc^T = -A^T * y^T + c^T
+		cuda_memcpy(gpu.d_rc, gpu.d_c, n, cudaMemcpyDeviceToDevice);
+		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, n, &MINUS_ONE, gpu.d_A, m, gpu.d_y, 1, &ONE, gpu.d_rc, 1));
+
+		// select entering variable
+		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_rc, gpu.d_B_ids, m);
+		cudaDeviceSynchronize();
+		thrust::device_ptr<double> thrust_rc(gpu.d_rc);
+		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
+		int enter = iterator - thrust_rc;
+		
+		if (*iterator <= OPTIMALITY_TOL) {
 			status = SolveStatus::OptimumFound;
 			break;
-		}
-
-		// ============ Leaving variable ============
-
-		// alpha = B_inv * N_p
-		cublasDgemv(handle, CUBLAS_OP_N,
-			m, m, &one, d_B_inv, m, d_N + p * m, 1, &zero, d_alpha, 1);
-
-		if (*thrust::max_element(thrust_alpha, thrust_alpha + m) <= EPS) {
+		}  
+		
+		// solve for d: B * d = A_enter
+		cuda_memcpy(gpu.d_d, gpu.d_A + (enter * m), m, cudaMemcpyDeviceToDevice);
+		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_d, m, gpu.d_info));
+		
+		// ratio test
+		auto [theta_min, leave] = thrust::transform_reduce(
+			thrust::device,
+			thrust::make_counting_iterator(0),
+			thrust::make_counting_iterator(m),
+			RatioTestUnaryOp{gpu.d_xB, gpu.d_d},
+			thrust::make_pair(DBL_MAX, -1),                 // init value
+			MinPairOp()
+		);
+		
+		if (leave == -1 || theta_min >= DBL_MAX) {
 			status = SolveStatus::Unbounded;
 			break;
 		}
-
-		compute_theta<<<blocks_1d_m, BS_1D>>>(d_x_B, d_alpha, d_theta, m);
-		cudaDeviceSynchronize();
-		iterator = thrust::min_element(thrust_theta, thrust_theta + m);
-		q = iterator - thrust_theta;
-
-		// ============ Update the basis and inverse ============
-
-		// swap N[p] and B[q]
-		cudaMemcpy(d_swap_column, d_B + q * m, m * sizeof(real), cudaMemcpyDeviceToDevice);
-		cudaMemcpy(d_B + q * m, d_N + p * m, m * sizeof(real), cudaMemcpyDeviceToDevice);
-		cudaMemcpy(d_N + p * m, d_swap_column, m * sizeof(real), cudaMemcpyDeviceToDevice);
-
-		cudaMemcpy(&alpha_q, d_alpha + q, sizeof(real), cudaMemcpyDeviceToHost);
-		init_identity<<<dim3(blocks_2d_m, blocks_2d_m), dim3(BS_2D, BS_2D)>>>(d_E, m);
-		cudaDeviceSynchronize();
-		compute_E_q<<<blocks_1d_m, BS_1D>>>(d_E, d_alpha, m, q, alpha_q);
-		cudaDeviceSynchronize();
-		// new_B_inv = E * B_inv
-		cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-			m, m, m, &one, d_E, m, d_B_inv, m, &zero, d_new_B_inv, m);
-		std::swap(d_B_inv, d_new_B_inv);
 		
-		// ======= Update the cost, indices and solution =======
+		update_xB<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
+		cudaDeviceSynchronize();
+		cuda_memcpy(gpu.d_B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
+	}
+	std::cout << "# Iterations " << iteration << '\n';
 
-		swap_values<real>(d_c_B, d_c_N, d_swap_real, p, q);
-		swap_values<int>(d_B_ixs, d_N_ixs, d_swap_int, p, q);
-		// x_B = B_inv * b
-		cublasDgemv(handle, CUBLAS_OP_N,
-			m, m, &one, d_B_inv, m, d_b, 1, &zero, d_x_B, 1);
-
-	} while (++i < MAX_ITER);
-	std::cout << "# Iterations " << i << '\n';
-
-	real z;
-	if (status == SolveStatus::OptimumFound)
-		cublasDdot(handle, m, d_c_B, 1, d_x_B, 1, &z);
-	
-	return std::make_pair(z, status);
+	return status;
 }
 
 /* ===================== SOLVER ===================== */
 
-std::pair<real, SolveStatus> solve(
-	real* N, real* b, real* c, int* B_ixs,
-	int m, int n, int num_surplus, int num_slack
+std::pair<double, SolveStatus> solve(
+	const Eigen::MatrixXd& A,
+	const Eigen::VectorXd& b,
+	const Eigen::VectorXd& c,
+	int m, int n,
+	int identity_start, int artificial_start, int artificial_end
 ) {
-	cublasHandle_t handle;
-	if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
-		std::cerr << "cublasCreate failed.\n";
-		std::exit(EXIT_FAILURE);
-	}
 
-	real *d_B, *d_N, *d_b, *d_c, *d_c_phase_one, *d_B_inv;
-	real *d_c_B, *d_c_N, *d_x_B, *d_y, *d_e, *d_alpha, *d_theta;
-	real *d_swap_column, *d_E, *d_new_B_inv, *d_swap_real;
-	int *d_B_ixs, *d_N_ixs, *d_swap_int;
+	std::vector<int> B_ids(m);
+	for (int i = 0; i < m; ++i)
+	  B_ids[i] = identity_start + i;
 
-	int identity_start = n + num_surplus;
-	int artificial_start = identity_start + num_slack;
-	int artificial_end = identity_start + m;
-	int blocks_1d_n = num_blocks(n, BS_1D);
-	int blocks_1d_m = num_blocks(m, BS_1D);
-	int blocks_2d_m = num_blocks(m, BS_2D);
-	int blocks_1d_artificial_end = num_blocks(artificial_end, BS_1D);
+	std::vector<double> cost_phase_one(artificial_end);
+	for (int i = 0; i < artificial_end; ++i)
+		cost_phase_one[i] = i < artificial_start ? 0.0 : -1.0;
 
-	PtrAlloc<real> real_allocs[] = {
-		{d_B, m * m}, {d_N, m * identity_start}, {d_b, m}, {d_c, artificial_start},
-		{d_c_phase_one, artificial_end}, {d_B_inv, m * m}, {d_c_N, artificial_end},
-		{d_x_B, m}, {d_y, m}, {d_e, identity_start}, {d_alpha, m}, {d_theta, m},
-		{d_swap_column, m}, {d_E, m * m}, {d_new_B_inv, m * m}, {d_swap_real, 1}
-	};
-	PtrAlloc<int> int_allocs[] = { {d_N_ixs, artificial_end}, {d_swap_int, 1} };
-	
-	// ============== Allocation ==============
+	DeviceResources gpu(m, artificial_end);
+	cuda_memcpy(gpu.d_A, A.data(), m * artificial_end, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.d_c, cost_phase_one.data(), artificial_end, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.d_B_ids, B_ids.data(), m, cudaMemcpyHostToDevice);
 
-	for (auto &[ptr, size] : real_allocs)
-		cuda_malloc(ptr, size);
-	for (auto &[ptr, size] : int_allocs)
-		cuda_malloc(ptr, size);
+	const dim3 block_dim(BLOCK_DIM_X, BLOCK_DIM_Y);
+	const dim3 grid_dim(div_up(m, block_dim.x), div_up(m, block_dim.y));
+	const dim3 grid_dim_1D(div_up(m, BLOCK_DIM_1D));
 
-	d_B_ixs = d_N_ixs + identity_start;
-	d_c_B = d_c_N + identity_start;
-
-	thrust::device_ptr<real> thrust_e(d_e);
-	thrust::device_ptr<real> thrust_alpha(d_alpha);
-	thrust::device_ptr<real> thrust_theta(d_theta);
-	
-	// ============ Initialization ============
-
-	init_identity<<<dim3(blocks_2d_m, blocks_2d_m), dim3(BS_2D, BS_2D)>>>(d_B_inv, m);
-	init_identity<<<dim3(blocks_2d_m, blocks_2d_m), dim3(BS_2D, BS_2D)>>>(d_B, m);
-	init_indices<<<blocks_1d_artificial_end, BS_1D>>>(d_N_ixs, artificial_end);
-	init_cost_phase_one<<<blocks_1d_artificial_end, BS_1D>>>(d_c_phase_one, artificial_start, artificial_end);
-	cuda_memcpy(d_N, N, m * identity_start, cudaMemcpyHostToDevice);
-	cuda_memcpy(d_b, b, m, cudaMemcpyHostToDevice);
-	cuda_memcpy(d_x_B, d_b, m, cudaMemcpyDeviceToDevice);
+	assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
 	cudaDeviceSynchronize();
-	cuda_memcpy(d_c_N, d_c_phase_one, artificial_end, cudaMemcpyDeviceToDevice);
+	cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
+	cuda_memcpy(gpu.d_xB, b.data(), m, cudaMemcpyHostToDevice);
+	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_xB, m, gpu.d_info));
 
 	// =============== Phase I ===============
+	
+	SolveStatus _ = core(gpu, m, artificial_end, block_dim, grid_dim_1D, grid_dim);
 
-	auto [sum_artificial, status_phase_one] = core(
-		handle, d_B, d_N, d_b, d_B_inv, d_c_B, d_c_N, d_x_B, d_y, d_e, d_alpha, d_theta,
-		d_swap_column, d_new_B_inv, d_E, d_B_ixs, d_N_ixs, d_swap_real, d_swap_int,
-		thrust_e, thrust_alpha, thrust_theta, m, identity_start, blocks_1d_m, blocks_2d_m
-	);
-
-	if (status_phase_one != SolveStatus::OptimumFound || fabs(sum_artificial) > EPS) {
-		std::cout << "Phase I failed, the optimum is " << sum_artificial << '\n';
-		std::exit(EXIT_FAILURE);
-	}
-
-	cudaMemcpy(B_ixs, d_B_ixs, m * sizeof(int), cudaMemcpyDeviceToHost);
+	// if the basis contains artificials, pivot them out; for now, just exit
+	cuda_memcpy(B_ids.data(), gpu.d_B_ids, m, cudaMemcpyDeviceToHost);
 	bool has_artificials = false;
-	for (int ix : std::span{B_ixs, B_ixs + m}) {
+	for (int ix : B_ids) {
 		if (ix >= artificial_start) {
 			std::cerr << "!! Index " << ix << " >= " << artificial_start << '\n';
 			has_artificials = true;
@@ -325,73 +302,47 @@ std::pair<real, SolveStatus> solve(
 
 	// =============== Phase II ===============
 
-	transition(d_N, d_N_ixs, d_B_ixs, c, d_c, d_c_N, d_c_B,
-		m, identity_start, artificial_start, artificial_end);
+	cuda_memcpy(gpu.d_c, c.data(), artificial_start, cudaMemcpyHostToDevice);
 
-	auto [z, status] = core(
-		handle, d_B, d_N, d_b, d_B_inv, d_c_B, d_c_N, d_x_B, d_y, d_e, d_alpha, d_theta,
-		d_swap_column, d_new_B_inv, d_E, d_B_ixs, d_N_ixs, d_swap_real, d_swap_int,
-		thrust_e, thrust_alpha, thrust_theta, m, identity_start - m + num_slack, blocks_1d_m, blocks_2d_m
-	);
+	SolveStatus status = core(gpu, m, artificial_start, block_dim, grid_dim_1D, grid_dim);
 
-	// ============== Deallocation ==============
+	double z;
+	if (status == SolveStatus::OptimumFound) {
+		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_y, gpu.d_c, gpu.d_B_ids, m);
+		cudaDeviceSynchronize();
+		cublasDdot(gpu.handle_cublas, m, gpu.d_y, 1, gpu.d_xB, 1, &z);
+	}
 
-	cublasDestroy(handle);
-	for (auto &[ptr,_] : real_allocs)
-		cudaFree(ptr);
-	for (auto &[ptr,_] : int_allocs)
-		cudaFree(ptr);
-	
 	return std::make_pair(z, status);
 }
 
-/* ===================== MAIN ===================== */
+int main() {
+	int m, n, n_surplus, n_slack;
+	double optimum, offset;
 
-int main(int argc, char* argv[]) {
-	std::ios_base::sync_with_stdio(false);
+	std::cin >> m >> n >> n_surplus >> n_slack >> optimum >> offset;
 
-	real optimum;
-	int m, n, num_surplus, num_slack;
-	if (!(std::cin >> m >> n >> num_surplus >> num_slack >> optimum)) {
-		std::cerr << "Failed to read the file\n";
-		std::exit(EXIT_FAILURE);
-	}
+	int identity_start = n + n_surplus;
+	int artificial_start = identity_start + n_slack;
+	int artificial_end = identity_start + m;
+	
+	Eigen::MatrixXd A(m, artificial_end);
+	Eigen::VectorXd b(m), c(artificial_start);
 
-	int identity_start = n + num_surplus;
-	int artificial_start = identity_start + num_slack;
-	real *N, *b, *c;
-	int* B_ixs;
+	for (int i = 0; i < m; ++i)
+		for (int j = 0; j < artificial_end; ++j)
+			std::cin >> A(i, j);
 
-	cuda_malloc_host(N, m * identity_start);
-	cuda_malloc_host(b, m);
-	cuda_malloc_host(c, artificial_start);
-	cuda_malloc_host(B_ixs, m);
+	for (int i = 0; i < m; ++i)
+		std::cin >> b(i);
 
-	load_matrix(N, m, identity_start);
-	load_matrix(b, m, 1);
-	load_matrix(c, 1, artificial_start);
+	for (int i = 0; i < artificial_start; ++i)
+		std::cin >> c(i);
 
-	auto [z, status] = solve(N, b, c, B_ixs, m, n, num_surplus, num_slack);
+	equilibrate(A, b);
+	auto [z, status] = solve(A, b, c, m, n, identity_start, artificial_start, artificial_end);
 
-	switch (status) {
-		case SolveStatus::OptimumFound:
-			std::cout << std::scientific << std::uppercase << std::setprecision(3)
-								<< "Optimum found: " << -z << '\n'
-								<< "Optimum known: " << optimum << '\n';
-			break;
-
-		case SolveStatus::Unbounded:
-			std::cout << "Problem unbounded.\n";
-			break;
-
-		case SolveStatus::MaxIter:
-			std::cout << "MAX_ITER exceeded.\n";
-			break;
-	}
-
-	cudaFreeHost(N);
-	cudaFreeHost(c);
-	cudaFreeHost(b);
-
-	return 0;
+	std::cout << std::scientific << std::uppercase << std::setprecision(5)
+	          << "Optimum found: " << z << '\n'
+	          << "Optimum known: " << optimum << '\n';
 }

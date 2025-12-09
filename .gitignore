@@ -4,6 +4,7 @@
 
 *.out
 **/copy.cu
+**/old.cu
 
 *.mps
 input/netlib/compressed/

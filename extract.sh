@@ -3,8 +3,48 @@
 files=("$1")
 
 if [ -z "${files[0]}" ]; then
-  files=("adlittle" "afiro" "e226" "israel" "lotfi" "scagr7" "sc105" "sc205" "sc50a" "sc50b" "share2b")
+	files=(
+		"adlittle" 
+		"afiro"
+		"agg"
+		"bandm"
+		"beaconfd"
+		"blend"
+		"boeing1"
+		"boeing2"
+		"bore3d"
+		"brandy"
+		"capri"
+		"e226" 
+		"etamacro"
+		"finnis"
+		"gfrd-pnc"
+		"grow7"
+		"israel" 
+		"kb2"
+		"lotfi"
+		"recipe" 
+		"sc105" 
+		"sc205"
+		"sc50a" 
+		"sc50b"
+		"scagr25"
+		"scagr7" 
+		"scfxm1"
+		"scorpion"
+		"scrs8"
+		"scsd1"
+		"sctap1"
+		"share1b"
+		"share2b"
+		"stair"
+		"standata"
+		"standmps"
+		"stocfor1"
+		"vtp.base"
+	)
 fi
+
 BASE_URL="https://www.netlib.org/lp/data"
 NETLIB_DIR="input/netlib"
 

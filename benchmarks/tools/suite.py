@@ -175,7 +175,7 @@ def run_suite(suite_name: str, measurements_dir: str = 'measurements',
             # Check if already measured
             if os.path.exists(output_file) and not force:
                 if verbose:
-                    print(f"[{i}/{len(suite['problems'])}] {problem_name} ({problem['m']}×{problem['n']})... "
+                    print(f"[{solver_name}] [{i}/{len(suite['problems'])}] {problem_name} ({problem['m']}×{problem['n']})... "
                           f"SKIPPED (already measured, use --force to re-run)")
                 skipped += 1
                 continue
@@ -204,14 +204,14 @@ def run_suite(suite_name: str, measurements_dir: str = 'measurements',
                 if verbose:
                     df = pd.DataFrame(measurements)
                     stats = aggregate_statistics(df)
-                    print(f"[{i}/{len(suite['problems'])}] {problem_name} ({problem['m']}×{problem['n']})... "
+                    print(f"[{solver_name}] [{i}/{len(suite['problems'])}] {problem_name} ({problem['m']}×{problem['n']})... "
                           f"✓ (mean: {format_time(stats['mean'])}, "
                           f"95% CI: {format_ci(stats['ci_lower'], stats['ci_upper'])})")
 
                 completed += 1
 
             except Exception as e:
-                print(f"[{i}/{len(suite['problems'])}] {problem_name} ({problem['m']}×{problem['n']})... "
+                print(f"[{solver_name}] [{i}/{len(suite['problems'])}] {problem_name} ({problem['m']}×{problem['n']})... "
                       f"❌ FAILED: {e}")
                 raise
 

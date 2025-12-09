@@ -374,12 +374,43 @@ SOLVERS = {
         "type": "parallel",
         "input_method": "stdin",
     },
-    # Future solvers:
-    # 'cuda_v1': {
-    #     'binary': os.path.join(PROJECT_ROOT, 'cuda_simplex/build/cuda_canonical'),
-    #     'description': 'CUDA Simplex (parallel)',
-    #     'type': 'parallel'
-    # }
+    # cuda/ solvers (float precision, read from file argument)
+    "cuda_fast_v1": {
+        "binary": os.path.join(PROJECT_ROOT, "src/cuda/bin_solver/_v1_baseline.out"),
+        "description": "cuBLAS baseline (float)",
+        "type": "parallel",
+        "input_method": "file_arg",
+    },
+    "cuda_fast_v2": {
+        "binary": os.path.join(PROJECT_ROOT, "src/cuda/bin_solver/_v2_quadratic_B_inv.out"),
+        "description": "Quadratic B_inv update (float)",
+        "type": "parallel",
+        "input_method": "file_arg",
+    },
+    "cuda_fast_v3": {
+        "binary": os.path.join(PROJECT_ROOT, "src/cuda/bin_solver/_v3_linear_y_and_x_b.out"),
+        "description": "Linear y/x_b computation (float)",
+        "type": "parallel",
+        "input_method": "file_arg",
+    },
+    "cuda_fast_v4": {
+        "binary": os.path.join(PROJECT_ROOT, "src/cuda/bin_solver/_v4_cub_reduction.out"),
+        "description": "CUB reductions (float)",
+        "type": "parallel",
+        "input_method": "file_arg",
+    },
+    "cuda_fast_v1_fix": {
+        "binary": os.path.join(PROJECT_ROOT, "src/cuda/bin_solver/v1_baseline_fix.out"),
+        "description": "Baseline with bug fixes (float)",
+        "type": "parallel",
+        "input_method": "file_arg",
+    },
+    "cuda_fast_quadratic": {
+        "binary": os.path.join(PROJECT_ROOT, "src/cuda/bin_solver/solver_quadratic_basis.out"),
+        "description": "Advanced Thrust quadratic (float)",
+        "type": "parallel",
+        "input_method": "file_arg",
+    },
 }
 
 # -----------------------------------------------------------------------------
@@ -473,4 +504,11 @@ SOLVER_COLORS = {
     "cuda_slow_v6": "#8338EC",  # Purple
     "cuda_slow_v7": "#FF006E",  # Pink
     "cuda_slow_v8": "#3A86FF",  # Blue
+    # cuda_fast solvers
+    "cuda_fast_v1": "#06D6A0",  # Mint
+    "cuda_fast_v2": "#118AB2",  # Ocean blue
+    "cuda_fast_v3": "#073B4C",  # Dark teal
+    "cuda_fast_v4": "#EF476F",  # Coral
+    "cuda_fast_v1_fix": "#FFD166",  # Gold
+    "cuda_fast_quadratic": "#9B5DE5",  # Lavender
 }

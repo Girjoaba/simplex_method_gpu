@@ -45,16 +45,18 @@ for in_file in "${PROBLEM_FILES[@]}"; do
     tmp_err="$(mktemp)"       # solver stderr
 
     # 1) Interface: original MPS -> canonical LP file (saved and kept)
-    if ! "$PYTHON" "$BIG_M_INTERFACE" "$in_file" "$canon_file" > /dev/null 2>&1; then
-        echo "[skip] interface failed on $in_file, ignoring."
+    if ! "$PYTHON" "$BIG_M_INTERFACE" "$in_file" "$canon_file" > "$tmp_out" 2> "$tmp_err"; then
+        echo "[skip] generating big-m input file for $in_file failed, ignoring."
+        echo "[stderr] $tmp_err"
         rm -f "$tmp_out" "$tmp_err" "$out_file"
         errors=$((errors + 1))
         continue
     fi
 
     # Additional conversion for tp-method
-    if ! "$PYTHON" "$TWO_PHASE_INTERFACE" "$in_file" "$tp_file"; then
-        echo "[skip] generating two-phase input in file $in_file failed, ignoring."
+    if ! "$PYTHON" "$TWO_PHASE_INTERFACE" "$in_file" "$tp_file" > "$tmp_out" 2> "$tmp_err"; then
+        echo "[skip] generating two-phase input for $in_file failed, ignoring."
+        echo "[stderr] $tmp_err"
         rm -f "$tmp_out" "$tmp_err" "$out_file"
         errors=$((errors + 1))
         continue

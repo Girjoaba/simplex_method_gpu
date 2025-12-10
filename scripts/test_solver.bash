@@ -59,10 +59,10 @@ compared=0
 correct=0
 wrong=0
 
-if [[ "$SOLVER_BIN" == bm* ]]; then
+if [[ $(basename "$SOLVER_BIN") == bm* ]]; then
     echo "[info] Solver binary starts with 'bm'. Using *.canonical files."
     readarray -t problems_array < <(find "$INPUT_DIR" -maxdepth 1 -type f -name "*.canonical")
-else [[ "$SOLVER_BIN" == tp* ]]
+else
     echo "[info] Solver binary starts with 'tp'. Using *.twophase files."
     readarray -t problems_array < <(find "$INPUT_DIR" -maxdepth 1 -type f -name "*.twophase")
 fi

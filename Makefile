@@ -68,7 +68,7 @@ $(CPU_TARGET): $(SRC_CUDA_DIR)/v1_cpu.cpp
 	$(CXX) $(CXXFLAGS) $(CPP_FLAGS) $< -o $@
 
 # === two-phase-method ===
-$(BIN_SOLVER_DIR)%.out: $(SRC_two_phase)/%.cu
+$(BIN_SOLVER_DIR)/%.out: $(SRC_two_phase)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	# Hardcoded, whatever
 	$(NVCC) $< -o $@ \

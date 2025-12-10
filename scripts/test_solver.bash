@@ -81,7 +81,7 @@ for canonical_path in "${problems_array[@]}"; do
 
     canonical_base=$(basename "$canonical_path")      # e.g. adlittle.canonical
 
-    if [[ "$SOLVER_BIN" == bm* ]]; then
+    if [[ $(basename "$SOLVER_BIN") == bm* ]]; then
         problem_root=${canonical_base%.canonical} # e.g. adlittle
     else
         problem_root=${canonical_base%.twophase} # e.g. adlittle

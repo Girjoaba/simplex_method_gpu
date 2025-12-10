@@ -50,11 +50,6 @@ rm -rf "$EXPERIMENT_DIR"
 mkdir -p "$EXPERIMENT_DIR"
 
 echo "[info] writing results to $EXPERIMENT_DIR"
-if [ -n "$TARGET_PROBLEM" ]; then
-    echo "[info] filtering to problem: $TARGET_PROBLEM"
-else
-    echo "[info] running on all problems"
-fi
 
 attempted=0          # has matching gt file
 glpk_errors=0        # repurposed: missing gt / mapping issues
@@ -70,6 +65,12 @@ if [[ "$SOLVER_BIN" == bm* ]]; then
 else [[ "$SOLVER_BIN" == tp* ]]
     echo "[info] Solver binary starts with 'tp'. Using *.twophase files."
     readarray -t problems_array < <(find "$INPUT_DIR" -maxdepth 1 -type f -name "*.twophase")
+fi
+
+if [ -n "$TARGET_PROBLEM" ]; then
+    echo "[info] filtering to problem: $TARGET_PROBLEM"
+else
+    echo "[info] running on all problems: ${problems_array[@]}"
 fi
 
 for canonical_path in "${problems_array[@]}"; do

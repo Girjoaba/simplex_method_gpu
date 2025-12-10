@@ -67,17 +67,17 @@ $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 
 # === Compile Rule (Pattern Match) ===
 # This maps 'bin_solver/NAME.out' directly to 'src/cuda_slow/NAME.cu'
-$(BIN_SOLVER_DIR)/%.out: $(SRC_CUDA_DIR)/%.cu
+$(BIN_SOLVER_DIR)/%.out: $(SRC_BIG_M_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $< -o $@ $(LIBS)
 
 # === CPU Solver (Eigen-based, no CUDA) ===
-$(CPU_TARGET): $(SRC_CUDA_DIR)/v1_cpu.cpp
+$(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
 	@mkdir -p $(BIN_SOLVER_DIR)
 	$(CXX) $(CXXFLAGS) $(CPP_FLAGS) $< -o $@
 
 # === two-phase-method ===
-$(BIN_SOLVER_DIR)/%.out: $(SRC_two_phase)/%.cu
+$(BIN_SOLVER_DIR)/%.out: $(SRC_TWO_PHASE_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	# Hardcoded, whatever
 	$(NVCC) $< -o $@ \

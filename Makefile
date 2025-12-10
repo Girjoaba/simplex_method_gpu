@@ -42,11 +42,14 @@ TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(BASENAMES))
 # CPU solver target (Eigen-based, no CUDA)
 CPU_TARGET := $(BIN_SOLVER_DIR)/v1_cpu.out
 
+TWO_PHASE_SRCS := $(wildcard $(SRC_two_phase)/*.cu)
+TWO_PHASE_BASENAMES := $(basename $(notdir $(TWO_PHASE_SRCS)))
+TWO_PHASE_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(TWO_PHASE_BASENAMES))
 # =============================================== |
 # ------------------ Targets -------------------- |
 # =============================================== |
 
-all: $(TARGETS) $(CPU_TARGET)
+all: $(TARGETS) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
 
 # Build GLPK tools
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp

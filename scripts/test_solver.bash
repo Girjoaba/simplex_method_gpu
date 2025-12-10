@@ -64,14 +64,27 @@ compared=0
 correct=0
 wrong=0
 
-for canonical_path in "$INPUT_DIR"/*.canonical; do
+if [[ "$SOLVER_BIN" == bm* ]]; then
+    echo "[info] Solver binary starts with 'bm'. Using *.canonical files."
+    readarray -t problems_array < <(find "$INPUT_DIR" -maxdepth 1 -type f -name "*.canonical")
+else [[ "$SOLVER_BIN" == tp* ]]
+    echo "[info] Solver binary starts with 'tp'. Using *.twophase files."
+    readarray -t problems_array < <(find "$INPUT_DIR" -maxdepth 1 -type f -name "*.twophase")
+fi
+
+for canonical_path in "${problems_array[@]}"; do
     # if no files, skip pattern literal
     if [ ! -f "$canonical_path" ]; then
         continue
     fi
 
     canonical_base=$(basename "$canonical_path")      # e.g. adlittle.canonical
-    problem_root=${canonical_base%.canonical}         # e.g. adlittle
+
+    if [[ "$SOLVER_BIN" == bm* ]]; then
+        problem_root=${canonical_base%.canonical} # e.g. adlittle
+    else
+        problem_root=${canonical_base%.twophase} # e.g. adlittle
+    fi
 
     # Apply filter if TARGET_PROBLEM is set
     if [ -n "$TARGET_PROBLEM" ] && [ "$problem_root" != "$TARGET_PROBLEM" ]; then

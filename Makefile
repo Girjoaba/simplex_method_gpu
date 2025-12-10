@@ -74,7 +74,7 @@ $(BIN_SOLVER_DIR)/%.out: $(SRC_two_phase)/%.cu
 	$(NVCC) $< -o $@ \
         --std=c++20 \
         -ccbin /usr/bin/g++-13 \
-        -I ~/local/include \
+        -I $(EIGEN_DIR) \
         -lcublas -lcusolver \
         --expt-relaxed-constexpr
 

@@ -2,7 +2,8 @@
 set -euo pipefail
 
 PYTHON="python"
-INTERFACE="./src/gurobi/interface_gurobi.py"
+BIG_M_INTERFACE="./src/gurobi/interface_gurobi.py"
+TWO_PHASE_INTERFACE="./src/gurobi/interface_gurobi.py"
 SOLVER="./src/gurobi/solver_gurobi.py"
 OUT_DIR="./test/groundtruth"
 
@@ -36,6 +37,7 @@ for in_file in "${PROBLEM_FILES[@]}"; do
     # Canonical file path in the SAME directory as the input:
     # ./test/input/foo.mps -> ./test/input/foo.canonical
     canon_file="${in_file%.*}.canonical"
+    tp_file="${in_file%.*}.twophase"
 
     echo "[run] $in_file -> $canon_file -> $out_file"
 
@@ -43,8 +45,16 @@ for in_file in "${PROBLEM_FILES[@]}"; do
     tmp_err="$(mktemp)"       # solver stderr
 
     # 1) Interface: original MPS -> canonical LP file (saved and kept)
-    if ! "$PYTHON" "$INTERFACE" "$in_file" "$canon_file" > /dev/null 2>&1; then
+    if ! "$PYTHON" "$BIG_M_INTERFACE" "$in_file" "$canon_file" > /dev/null 2>&1; then
         echo "[skip] interface failed on $in_file, ignoring."
+        rm -f "$tmp_out" "$tmp_err" "$out_file"
+        errors=$((errors + 1))
+        continue
+    fi
+
+    # Additional conversion for tp-method
+    if ! "$PYTHON" "$TWO_PHASE_INTERFACE" "$in_file" "$canon_file" > /dev/null 2>&1; then
+        echo "[skip] generating two-phase input in file $in_file failed, ignoring."
         rm -f "$tmp_out" "$tmp_err" "$out_file"
         errors=$((errors + 1))
         continue

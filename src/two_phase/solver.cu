@@ -318,7 +318,7 @@ std::pair<double, SolveStatus> solve(
 
 int main() {
 	int m, n, n_surplus, n_slack;
-	double optimum; //, offset;
+	// double optimum, offset;
 
 	std::cin >> m >> n >> n_surplus >> n_slack; //  >> optimum >> offset;
 

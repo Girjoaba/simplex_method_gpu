@@ -53,7 +53,7 @@ for in_file in "${PROBLEM_FILES[@]}"; do
     fi
 
     # Additional conversion for tp-method
-    if ! "$PYTHON" "$TWO_PHASE_INTERFACE" "$in_file" "$canon_file" > /dev/null 2>&1; then
+    if ! "$PYTHON" "$TWO_PHASE_INTERFACE" "$in_file" "$tp_file"; then
         echo "[skip] generating two-phase input in file $in_file failed, ignoring."
         rm -f "$tmp_out" "$tmp_err" "$out_file"
         errors=$((errors + 1))

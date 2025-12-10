@@ -15,9 +15,11 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file')
+parser.add_argument('output')
 file = parser.parse_args().file
+output = parser.parse_args().output
 
-model = gp.read('input/netlib/mps/' + file + '.mps')
+model = gp.read(file)
 
 if (set(model.getAttr("VType")) != {'C'}):
     sys.exit('Model is not continuous')
@@ -138,7 +140,7 @@ assert c.shape == (n + n_surplus + n_slack,)
 
 # print(f"{n_surplus} surpluses, {n_slack} slacks, {m - n_slack} artificials")
 
-with open('test/input/' + file + '.twophase', "w") as f:
+with open(output, "w") as f:
     f.write(f"{m} {n} {n_surplus} {n_slack}\n")
     # f.write(f"{repr(float(optimum))} {repr(offset)}\n")
     for i in range(m):

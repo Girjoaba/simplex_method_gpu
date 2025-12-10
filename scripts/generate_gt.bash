@@ -2,8 +2,8 @@
 set -euo pipefail
 
 PYTHON="python"
-BIG_M_INTERFACE="./src/gurobi/interface_gurobi.py"
-TWO_PHASE_INTERFACE="./src/gurobi/interface_gurobi.py"
+BIG_M_INTERFACE="./src/gurobi/interface_bigm_gurobi.py"
+TWO_PHASE_INTERFACE="./src/gurobi/interface_twophase_gurobi.py"
 SOLVER="./src/gurobi/solver_gurobi.py"
 OUT_DIR="./test/groundtruth"
 

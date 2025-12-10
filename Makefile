@@ -58,7 +58,7 @@ TWO_PHASE_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(TWO_PHASE_BASENAME
 # ------------------ Targets -------------------- |
 # =============================================== |
 
-all:  $(TARGETS_BIG_M) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
+all:  $(BIG_M_TARGETS) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
 
 # Build GLPK tools
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
@@ -67,7 +67,7 @@ $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 
 # === Compile Rule (Pattern Match) ===
 # This maps 'bin_solver/NAME.out' directly to 'src/cuda_slow/NAME.cu'
-$(BIN_SOLVER_DIR)/%.out: $(SRC_BIG_M_DIR)/%.cu
+$(BIN_SOLVER_DIR)/bm_%.out: $(SRC_BIG_M_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $< -o $@ $(LIBS)
 
@@ -77,7 +77,7 @@ $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
 	$(CXX) $(CXXFLAGS) $(CPP_FLAGS) $< -o $@
 
 # === two-phase-method ===
-$(BIN_SOLVER_DIR)/%.out: $(SRC_TWO_PHASE_DIR)/%.cu
+$(BIN_SOLVER_DIR)/tp_%.out: $(SRC_TWO_PHASE_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	# Hardcoded, whatever
 	$(NVCC) $< -o $@ \

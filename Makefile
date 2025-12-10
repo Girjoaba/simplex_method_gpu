@@ -9,13 +9,13 @@ CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart -lcublas
 # LIBS        := -lcublas
 
 # Paths
-SRC_DIR         := src
-SRC_CUDA_DIR    := $(SRC_DIR)/cuda_slow
-SRC_GLPK_DIR    := $(SRC_DIR)/glpk
-SRC_two_phase   := $(SRC_DIR)/two_phase
-INPUT_DIR       := input
-BIN_SOLVER_DIR  := bin_solver
-BIN_GLPK_DIR    := bin_glpk
+SRC_DIR           := src
+SRC_BIG_M_DIR     := $(SRC_DIR)/big_m
+SRC_GLPK_DIR      := $(SRC_DIR)/glpk
+SRC_TWO_PHASE_DIR := $(SRC_DIR)/two_phase
+INPUT_DIR         := input
+BIN_SOLVER_DIR    := bin_solver
+BIN_GLPK_DIR      := bin_glpk
 
 # GLPK
 GLPK_PROGS   := glpk_interface glpk_solver
@@ -28,28 +28,37 @@ INPUT_FILE  := $(INPUT_DIR)/sample.txt
 # ------------ Dynamic Source Loading ----------- |
 # =============================================== |
 
-# 1. Match all source files (e.g., src/cuda_slow/v1_cpu.cu)
-SRCS := $(wildcard $(SRC_CUDA_DIR)/v*_*.cu)
+# --- Big M Sources (will be prefixed with bm_) ---
+# 1. Match all source files (e.g., src/big_m/v1_cpu.cu)
+BIG_M_SRCS := $(wildcard $(SRC_BIG_M_DIR)/v*_*.cu)
 
 # 2. Extract filenames without extension (e.g., v1_cpu)
-#    $(notdir ...) removes the directory path
-#    $(basename ...) removes the .cu extension
-BASENAMES := $(basename $(notdir $(SRCS)))
+BIG_M_BASENAMES_RAW := $(basename $(notdir $(BIG_M_SRCS)))
 
-# 3. Generate output targets (e.g., bin_solver/v1_cpu.out)
-TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(BASENAMES))
+# 3. *** Apply 'bm_' prefix ***
+BIG_M_BASENAMES := $(addprefix bm_, $(BIG_M_BASENAMES_RAW))
 
-# CPU solver target (Eigen-based, no CUDA)
-CPU_TARGET := $(BIN_SOLVER_DIR)/v1_cpu.out
+# 4. Generate output targets (e.g., bin_solver/bm_v1_cpu.out)
+BIG_M_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(BIG_M_BASENAMES))
 
-TWO_PHASE_SRCS := $(wildcard $(SRC_two_phase)/*.cu)
-TWO_PHASE_BASENAMES := $(basename $(notdir $(TWO_PHASE_SRCS)))
+# CPU solver target (Eigen-based, no CUDA) - renamed for consistency
+CPU_TARGET := $(BIN_SOLVER_DIR)/bm_v1_cpu.out
+
+# --- Two-Phase Sources (will be prefixed with tp_) ---
+TWO_PHASE_SRCS := $(wildcard $(SRC_TWO_PHASE_DIR)/*.cu)
+
+TWO_PHASE_BASENAMES_RAW := $(basename $(notdir $(TWO_PHASE_SRCS)))
+
+# *** Apply 'tp_' prefix ***
+TWO_PHASE_BASENAMES := $(addprefix tp_, $(TWO_PHASE_BASENAMES_RAW))
+
 TWO_PHASE_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(TWO_PHASE_BASENAMES))
+
 # =============================================== |
 # ------------------ Targets -------------------- |
 # =============================================== |
 
-all: $(TARGETS) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
+all:  $(TARGETS_BIG_M) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
 
 # Build GLPK tools
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp

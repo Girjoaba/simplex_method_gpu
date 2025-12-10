@@ -318,9 +318,9 @@ std::pair<double, SolveStatus> solve(
 
 int main() {
 	int m, n, n_surplus, n_slack;
-	double optimum, offset;
+	double optimum; //, offset;
 
-	std::cin >> m >> n >> n_surplus >> n_slack >> optimum >> offset;
+	std::cin >> m >> n >> n_surplus >> n_slack; //  >> optimum >> offset;
 
 	int identity_start = n + n_surplus;
 	int artificial_start = identity_start + n_slack;
@@ -343,6 +343,6 @@ int main() {
 	auto [z, status] = solve(A, b, c, m, n, identity_start, artificial_start, artificial_end);
 
 	std::cout << std::scientific << std::uppercase << std::setprecision(5)
-	          << "Optimum found: " << z << '\n'
-	          << "Optimum known: " << optimum << '\n';
+	          << "Optimum found: " << z << '\n';
+	          // << "Optimum known: " << optimum << '\n';
 }

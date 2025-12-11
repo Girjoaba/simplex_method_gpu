@@ -18,6 +18,11 @@ parser.add_argument('file')
 file = parser.parse_args().file
 
 model = gp.read('input/netlib/mps/' + file + '.mps')
+# IMPORTANT
+# gurobi's presolve discards the old objective constant term
+offset = model.ObjCon
+if model.ModelSense == gp.GRB.MINIMIZE:
+    offset *= -1.0
 model = model.presolve()
 
 if (set(model.getAttr("VType")) != { 'C' }):
@@ -46,7 +51,10 @@ b = np.array([c.RHS for c in constraints])
 c = np.array([v.Obj for v in vars])
 senses = np.array([c.Sense for c in constraints])
 
-offset = model.ObjCon
+offset += model.ObjCon
+print(f"Initial offset: {offset}")
+print(f"Objective scale: {model.params.ObjScale}")
+
 
 if model.ModelSense == gp.GRB.MINIMIZE:
     print("Converting minimisation to maximisation problem.")

@@ -2,10 +2,11 @@
 .vscode/
 .DS_Store
 
+output.txt
 *.out
-**/copy.cu
+*copy*
 **/old.cu
 
 *.mps
 input/netlib/compressed/
-input/*.txt
+input/problems/*.txt

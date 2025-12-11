@@ -35,7 +35,6 @@ optimum = float(row[6])
 
 # convert the problem to numpy arrays
 # flip the cost if it is a minimisation
-# flip negative constraints
 
 m, n = model.NumConstrs, model.NumVars
 constraints = model.getConstrs()
@@ -50,14 +49,6 @@ if model.ModelSense == gp.GRB.MINIMIZE:
     print("Converting minimisation to maximisation problem.")
     c *= -1.0
     optimum *= -1.0
-
-flip = b < 0
-A[flip] *= -1.0
-b[flip] *= -1.0
-ge = (senses == '>')
-le = (senses == '<')
-senses[flip & ge] = '<'
-senses[flip & le] = '>'
 
 # =================== Step 3 ===================
 
@@ -101,7 +92,6 @@ for i, var in enumerate(vars):
     b -= A[:, i] * var.LB
     offset += float(c[i] * var.LB)
 
-
 A = np.hstack([A, -A[:, free_indices]])
 c = np.hstack([c, -c[free_indices]])
 
@@ -127,16 +117,15 @@ assert n == A.shape[1]
 
 # =================== Step 4 ===================
 
-# remove redundant constraints; for now we cheat by learning them from the solver
-# when transitioning between the phases, we loop over the basic vars from right to left
-# so that we can learn redundant rows in descending order, otherwise indices may shift
-# also, it is not as simple as removing a constraint since we expect identity on the RHS
+# flip negative constraints
 
-# redundant_rows = [] if len(row) < 8 else [int(x) for x in row[7].strip("[]").split(",") if x.strip()]
-# A = np.delete(A, redundant_rows, axis=0)
-# b = np.delete(b, redundant_rows)
-# senses = np.delete(senses, redundant_rows)
-# m -= len(redundant_rows)
+flip = b < 0
+A[flip] *= -1.0
+b[flip] *= -1.0
+ge = (senses == '>')
+le = (senses == '<')
+senses[flip & ge] = '<'
+senses[flip & le] = '>'
 
 # =================== Step 5 ===================
 

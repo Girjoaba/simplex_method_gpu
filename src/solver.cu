@@ -23,7 +23,7 @@
 
 constexpr double OPTIMALITY_TOL = 1e-6;
 constexpr double PIVOT_TOL      = 1e-5;
-constexpr double EPS            = 1e-12;
+constexpr double ROW_TOL        = 1e-12;
 
 constexpr double ONE = 1.0;
 constexpr double MINUS_ONE = -1.0;
@@ -166,7 +166,7 @@ __global__ void update_xB(double* __restrict__ xB, const double* d, int leave, d
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < m)
 		xB[i] = (i != leave) ? (xB[i] - theta_min * d[i]) : theta_min;
-}	// learn the maths; is it better to use LU?
+}
 
 __global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -195,7 +195,7 @@ struct MinPairOp {
 };
 
 struct IsNonZero {
-	__device__ bool operator()(double v) const { return fabs(v) > EPS; }
+	__device__ bool operator()(double v) const { return fabs(v) > ROW_TOL; }
 };
 
 /* ===================== CORE LOGIC ===================== */
@@ -302,19 +302,16 @@ std::pair<double, SolveStatus> solve(
 	// =============== Phase I and Phase II ===============
 	
 	auto [sum_artificials, status_phase_one] = core(gpu, m, artificial_end, block_dim, grid_dim_1D, grid_dim);
-	if (status_phase_one != SolveStatus::OptimumFound || fabs(sum_artificials) > EPS) {
+	if (status_phase_one != SolveStatus::OptimumFound || fabs(sum_artificials) > OPTIMALITY_TOL) {
 		std::cout << "!! Phase I failed, the optimum is " << sum_artificials << '\n';
 		std::exit(EXIT_FAILURE);
 	}
 
 	cuda_memcpy(B_ids.data(), gpu.d_B_ids, m, cudaMemcpyDeviceToHost);
-	std::vector<int> indices; indices.resize(m);
-	for (int i = 0; i < indices.size(); ++i) indices[i] = i;
-	std::sort(indices.begin(), indices.end(), [&](int i, int j) { return B_ids[i] > B_ids[j]; });
 
 	for (int i = 0; i < m; ++i) {
-		int ix = B_ids[indices[i]];
-		if (ix < artificial_start) break;
+		int ix = B_ids[i];
+		if (ix < artificial_start) continue;
 
 		// build a unit vector to extract a row of B_inv
 		int row = ix - identity_start;
@@ -334,12 +331,12 @@ std::pair<double, SolveStatus> solve(
 		int enter = iterator == last ? -1 : (iterator - first);
 
 		if (enter == -1) {
-			fprintf(stdout, "!! Var %d: constraint %d is redundant and must be removed\n", ix, row);
+			fprintf(stdout, "!! Var %d: constraint %d is redundant\n", ix, row);
 			std::exit(EXIT_FAILURE);
 		}
 
 		// update B_ids and factorise B
-		cuda_memcpy(gpu.d_B_ids + indices[i], &enter, 1, cudaMemcpyHostToDevice);
+		cuda_memcpy(gpu.d_B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
 		assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
 		cudaDeviceSynchronize();
 		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));

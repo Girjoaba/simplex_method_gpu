@@ -18,6 +18,7 @@ parser.add_argument('file')
 file = parser.parse_args().file
 
 model = gp.read('input/netlib/mps/' + file + '.mps')
+model = model.presolve()
 
 if (set(model.getAttr("VType")) != { 'C' }):
     sys.exit('Model is not continuous')
@@ -45,8 +46,11 @@ b = np.array([c.RHS for c in constraints])
 c = np.array([v.Obj for v in vars])
 senses = np.array([c.Sense for c in constraints])
 
+offset = model.ObjCon
+
 if model.ModelSense == gp.GRB.MINIMIZE:
     print("Converting minimisation to maximisation problem.")
+    offset *= -1.0
     c *= -1.0
     optimum *= -1.0
 
@@ -56,7 +60,6 @@ if model.ModelSense == gp.GRB.MINIMIZE:
 # for now, we do not care about restoring the original variables
 
 INF = 1e20
-offset = 0.0
 fixed_indices = []
 free_indices = []
 

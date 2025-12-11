@@ -21,7 +21,7 @@
 
 #define MAX_ITERS 5000
 
-constexpr double OPTIMALITY_TOL = 1e-6;
+constexpr double OPTIMALITY_TOL = 1e-10;
 constexpr double PIVOT_TOL      = 1e-5;
 constexpr double ROW_TOL        = 1e-12;
 
@@ -373,7 +373,7 @@ int main() {
 	for (int i = 0; i < artificial_start; ++i)
 		std::cin >> c(i);
 
-	equilibrate(A, b, c);
+	// equilibrate(A, b, c);
 	auto [z, status] = solve(A, b, c, m, n, identity_start, artificial_start, artificial_end);
 
 	switch (status) {

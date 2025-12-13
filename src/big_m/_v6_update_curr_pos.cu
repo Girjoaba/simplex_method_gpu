@@ -11,16 +11,10 @@
 #include <thrust/device_ptr.h>
 #include <thrust/extrema.h>       // For max_element, min_element
 
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/execution_policy.h>
-#include <thrust/pair.h>
-
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
-// 66.168
+//  105.168
 
 // ---------------------------
 // Util. Functions
@@ -58,6 +52,7 @@ void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
         }
     }
 }
+
 
 // ---------------------------
 // Cuda Util. Functions
@@ -226,7 +221,6 @@ __global__ void mask_basis_kernel(double *d_s, const int* d_basis_ids, int m) {
 }
 
 // Update xB on the GPU
-// TODO: This might lead to numeric drift!
 __global__ void update_solution_kernel(double* __restrict__ xB, const double* d, int leave_idx, double theta, int m) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < m) {
@@ -237,45 +231,6 @@ __global__ void update_solution_kernel(double* __restrict__ xB, const double* d,
         }
     }
 }
-
-__global__ void gather_vector_kernel(double *d_out, const double* d_in, const int* d_indices, int m) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < m) {
-        d_out[idx] = d_in[d_indices[idx]];
-    }
-}
-
-// ---------------------------
-// Cuda Functors
-// ---------------------------
-
-struct RatioTestUnaryOp {
-    const double* xB;
-    const double* d;
-    double tol;
-
-    // Returns <Theta value, idx>
-    __device__ thrust::pair<double, int> operator()(int i) const {
-        double div = d[i];
-        if (div > tol) {
-            return thrust::make_pair(xB[i] / div, i);
-        }
-        // inf s.t. we never choose this one
-        return thrust::make_pair(DBL_MAX, -1);
-    }
-};
-
-struct MinPairOp {
-    __device__ thrust::pair<double, int> operator()(
-                    const thrust::pair<double, int>& a,
-                    const thrust::pair<double, int>& b) const {
-
-        if (a.first < b.first) return a;
-        if (a.first > b.first) return b;
-        return (a.second < b.second) ? a : b; // choose smaller idx
-    }
-};
-
 
 // ---------------------------
 // Main Algorithm
@@ -324,39 +279,36 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     ));
 
     // solve Initial xB:  B * xB = b
-    // Important: must have a an initial xB s.t. we can move it
     cudaCheckError(cudaMemcpy(gpu.d_xB, b.data(), sizeof(double) * m, cudaMemcpyHostToDevice));
     cusolverCheckError(cusolverDnDgetrs(
-        gpu.handle, 
-        CUBLAS_OP_N, 
-        m, 1,
-        gpu.d_B, m, 
-        gpu.d_ipiv, 
-        gpu.d_xB, m, 
-        gpu.d_info
+        gpu.handle, CUBLAS_OP_N, m, 1,
+        gpu.d_B, m, gpu.d_ipiv, gpu.d_xB, m, gpu.d_info
     ));
 
     // =============================== |
     // --------- Main Loop ----------- |
     // =============================== |
+    // See Algorithm 4. https://web.stanford.edu/class/msande310/Simplex-ref1.pdf
     
     int h_info = 0;
     for (int iter = 0; iter < MAX_ITERS; ++iter) {
- 
+        
+        for (int i = 0; i < m; ++i) {
+            cB(i) = c(basis[i]);    // subset of the cost coeff.
+        }
+
+        // ========= CUDA BEGIN ==========  
         // --- Must prepare basis & factorize every iteration
+        cudaCheckError(cudaMemcpy(gpu.d_basis_ids, basis.data(), sizeof(int) * m, cudaMemcpyHostToDevice));
         assemble_basis_kernel<<<gridSize, blockSize>>>(gpu.d_A, gpu.d_B, gpu.d_basis_ids, m, m);
-        // d_B becomes LU (factorize)
+        // d_B becomes LU
         cusolverCheckError(cusolverDnDgetrf(
-            gpu.handle, 
-            m, m, 
-            gpu.d_B, m,
-            gpu.d_work, 
-            gpu.d_ipiv, 
-            gpu.d_info
+            gpu.handle, m, m, gpu.d_B, m,
+            gpu.d_work, gpu.d_ipiv, gpu.d_info
         ));
 
-        // --- Solve for lambda: B^T * lambda = cB
-        gather_vector_kernel<<<block1D, grid1D>>>(gpu.d_x, gpu.d_c, gpu.d_basis_ids, m);
+        // --- Solve for lambda: B^T * lambda = cB 
+        cudaCheckError(cudaMemcpy(gpu.d_x, cB.data(), sizeof(double) * m, cudaMemcpyHostToDevice));
         // CUBLAS_OP_T: solve using transpose
         cusolverCheckError(cusolverDnDgetrs(
             gpu.handle, 
@@ -367,7 +319,6 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             gpu.d_x, m, 
             gpu.d_info
         ));
-
         // Calculate s = -A^T * lambda + c
         double alpha = -1.0;
         double beta  = 1.0;
@@ -385,6 +336,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 
         // ----- Select entering variable
         mask_basis_kernel<<<block1D, grid1D>>>(gpu.d_s, gpu.d_basis_ids, m);
+        cudaCheckError(cudaGetLastError());
 
         // Use thrust to all_reduce the s_max and enter variable
         thrust::device_ptr<double> s_ptr(gpu.d_s);
@@ -395,8 +347,8 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         int offset = max_iter - s_ptr;
         cudaCheckError(cudaMemcpy(&s_max, thrust::raw_pointer_cast(&*max_iter), sizeof(double), cudaMemcpyDeviceToHost));
         enter = offset;
-        
-        // ========== EXIT OPTIMALLY ===========  
+        // ========== CUDA END ===========  
+
         if (s_max <= OPTIMALITY_TOL) {
             std::cout << "Iteration: " << iter << "\n";
             Eigen::VectorXd xB(m);
@@ -407,9 +359,8 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             }
             return x;
         }
-        // ========== EXITED OPTIMALLY =========   
-        
-        // Compute direction: B * d = A_enter
+
+        // ========= CUDA BEGIN ==========  
         cudaCheckError(cudaMemcpy(gpu.d_d, gpu.d_A + (enter * m), sizeof(double) * m, cudaMemcpyDeviceToDevice));
         cusolverCheckError(cusolverDnDgetrs(
             gpu.handle, 
@@ -420,32 +371,36 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             gpu.d_d, m, 
             gpu.d_info 
         ));
+        // ========== CUDA END =========== 
         
         // ------- ratio test
-        // Functor looks up xB[i] and d[i], returns {theta, i}
-        thrust::pair<double, int> result = thrust::transform_reduce(
-            thrust::device,
-            thrust::make_counting_iterator(0),              // start idx
-            thrust::make_counting_iterator(m),              // end idx
-            RatioTestUnaryOp{gpu.d_xB, gpu.d_d, PIVOT_TOL}, // TRANSFORM
-            thrust::make_pair(DBL_MAX, -1),                 // init value
-            MinPairOp()                                     // REDUCE
-        );
-
-        double theta_min = result.first;
-        int leave = result.second;
+        Eigen::VectorXd xB(m);
+        Eigen::VectorXd d(m);
+        cudaCheckError(cudaMemcpy(xB.data(), gpu.d_xB, sizeof(double)*m, cudaMemcpyDeviceToHost));
+        cudaCheckError(cudaMemcpy(d.data(), gpu.d_d, sizeof(double)*m, cudaMemcpyDeviceToHost));
+        Eigen::Index leave = -1;
+        double theta_min = std::numeric_limits<double>::infinity();
+        for (int i = 0; i < m; ++i) {
+            if (d(i) > PIVOT_TOL) {
+                double theta = xB(i) / d(i);
+                if (theta < theta_min) {
+                    theta_min = theta;
+                    leave = i;
+                }
+            }
+        }
         
-        // ========== EXIT UNBOUNDED ===========
-        if (leave == -1 || theta_min >= DBL_MAX) {
+        if (leave == -1) {
             std::cout << "Problem unbounded\n";
             return Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
         }
-        // ========== EXITED UNBOUNDED =========
         
+        // ========= CUDA BEGIN ==========
         update_solution_kernel<<<block1D, grid1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
-        cudaCheckError(cudaMemcpy(gpu.d_basis_ids + leave, &enter, sizeof(int), cudaMemcpyHostToDevice));
+        // ========== CUDA END =========== 
 
         basis[leave] = enter;
+        cB(leave)    = c(enter);
     }
     
     std::cerr << "Warning: Hit iteration limit\n";

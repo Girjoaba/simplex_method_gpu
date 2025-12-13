@@ -20,7 +20,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
-// 66.168
+//  105.168
 
 // ---------------------------
 // Util. Functions
@@ -226,7 +226,6 @@ __global__ void mask_basis_kernel(double *d_s, const int* d_basis_ids, int m) {
 }
 
 // Update xB on the GPU
-// TODO: This might lead to numeric drift!
 __global__ void update_solution_kernel(double* __restrict__ xB, const double* d, int leave_idx, double theta, int m) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < m) {
@@ -235,13 +234,6 @@ __global__ void update_solution_kernel(double* __restrict__ xB, const double* d,
         } else {
             xB[idx] = xB[idx] - theta * d[idx];
         }
-    }
-}
-
-__global__ void gather_vector_kernel(double *d_out, const double* d_in, const int* d_indices, int m) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < m) {
-        d_out[idx] = d_in[d_indices[idx]];
     }
 }
 
@@ -342,21 +334,22 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     
     int h_info = 0;
     for (int iter = 0; iter < MAX_ITERS; ++iter) {
+        
+        for (int i = 0; i < m; ++i) {
+            cB(i) = c(basis[i]);    // subset of the cost coeff.
+        }
  
         // --- Must prepare basis & factorize every iteration
+        cudaCheckError(cudaMemcpy(gpu.d_basis_ids, basis.data(), sizeof(int) * m, cudaMemcpyHostToDevice));
         assemble_basis_kernel<<<gridSize, blockSize>>>(gpu.d_A, gpu.d_B, gpu.d_basis_ids, m, m);
-        // d_B becomes LU (factorize)
+        // d_B becomes LU
         cusolverCheckError(cusolverDnDgetrf(
-            gpu.handle, 
-            m, m, 
-            gpu.d_B, m,
-            gpu.d_work, 
-            gpu.d_ipiv, 
-            gpu.d_info
+            gpu.handle, m, m, gpu.d_B, m,
+            gpu.d_work, gpu.d_ipiv, gpu.d_info
         ));
 
-        // --- Solve for lambda: B^T * lambda = cB
-        gather_vector_kernel<<<block1D, grid1D>>>(gpu.d_x, gpu.d_c, gpu.d_basis_ids, m);
+        // --- Solve for lambda: B^T * lambda = cB 
+        cudaCheckError(cudaMemcpy(gpu.d_x, cB.data(), sizeof(double) * m, cudaMemcpyHostToDevice));
         // CUBLAS_OP_T: solve using transpose
         cusolverCheckError(cusolverDnDgetrs(
             gpu.handle, 
@@ -409,7 +402,6 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         }
         // ========== EXITED OPTIMALLY =========   
         
-        // Compute direction: B * d = A_enter
         cudaCheckError(cudaMemcpy(gpu.d_d, gpu.d_A + (enter * m), sizeof(double) * m, cudaMemcpyDeviceToDevice));
         cusolverCheckError(cusolverDnDgetrs(
             gpu.handle, 
@@ -443,9 +435,9 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         // ========== EXITED UNBOUNDED =========
         
         update_solution_kernel<<<block1D, grid1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
-        cudaCheckError(cudaMemcpy(gpu.d_basis_ids + leave, &enter, sizeof(int), cudaMemcpyHostToDevice));
 
         basis[leave] = enter;
+        cB(leave)    = c(enter);
     }
     
     std::cerr << "Warning: Hit iteration limit\n";

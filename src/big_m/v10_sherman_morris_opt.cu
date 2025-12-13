@@ -18,9 +18,6 @@
 
 #include <Eigen/Dense>
 
-constexpr int BLOCK_SIZE_1D = 256;
-constexpr int BLOCK_DIM_X = 32;
-constexpr int BLOCK_DIM_Y = 8;
 
 inline int get_grid_size(int n, int block_size) {
     return (n + block_size - 1) / block_size;
@@ -168,6 +165,7 @@ struct CusolverResources {
     double *d_invB;    // Explicit inverse matrix
     double *d_lambda;  // Dual vector buffer
     double *d_row_p;   // Buffer to hold a row of B^-1 for the update
+    double *d_scalar_val; // for pivoting the morrison
 
     dim3 block1D;
     dim3 grid1D;       // For vector operations (size m)
@@ -194,6 +192,7 @@ struct CusolverResources {
         cudaCheckError(cudaMalloc((void**)&d_invB, sizeof(double) * m * m));
         cudaCheckError(cudaMalloc((void**)&d_lambda, sizeof(double) * m));
         cudaCheckError(cudaMalloc((void**)&d_row_p, sizeof(double) * m));
+        cudaCheckError(cudaMalloc((void**)&d_scalar_val, sizeof(double)));
 
         cusolverCheckError(cusolverDnDgetrf_bufferSize(handle, m, m, d_B, m, &lwork));
         cudaCheckError(cudaMalloc((void**)&d_work, sizeof(double) * lwork));
@@ -226,6 +225,7 @@ struct CusolverResources {
         cudaFree(d_invB); 
         cudaFree(d_lambda); 
         cudaFree(d_row_p);
+        cudaFree(d_scalar_val);
         
         cusolverDnDestroy(handle);
         cublasDestroy(handle_cublas);
@@ -284,6 +284,15 @@ __global__ void gather_vector_kernel(double *d_out, const double* d_in, const in
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < m) {
         d_out[idx] = d_in[d_indices[idx]];
+    }
+}
+
+__global__ void prepare_sherman_morrison_data(double* d_d, int p, double* d_alpha) {
+    if (threadIdx.x == 0) {
+        double pivot = d_d[p];
+
+        *d_alpha = -1.0 / pivot;
+        d_d[p] = pivot - 1.0;
     }
 }
 
@@ -399,7 +408,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         }
 
         // lambda = (B^-1)^T * cB
-        gather_vector_kernel<<<gpu.block1D, gpu.grid1D>>>(gpu.d_x, gpu.d_c, gpu.d_basis_ids, m);
+        gather_vector_kernel<<<gpu.grid1D, gpu.block1D>>>(gpu.d_x, gpu.d_c, gpu.d_basis_ids, m);
         
         cublasCheckError(cublasDgemv(
             gpu.handle_cublas, CUBLAS_OP_T, 
@@ -425,7 +434,7 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         ));
 
         // ----- Select entering variable
-        mask_basis_kernel<<<gpu.block1D, gpu.grid1D>>>(gpu.d_s, gpu.d_basis_ids, m);
+        mask_basis_kernel<<<gpu.grid1D, gpu.block1D>>>(gpu.d_s, gpu.d_basis_ids, m);
 
         thrust::device_ptr<double> s_ptr(gpu.d_s);
         auto max_iter = thrust::max_element(s_ptr, s_ptr + n);
@@ -480,14 +489,12 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         }
         
         // update solution xB
-        update_solution_kernel<<<gpu.block1D, gpu.grid1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
+        update_solution_kernel<<<gpu.grid1D, gpu.block1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
         cudaCheckError(cudaMemcpy(gpu.d_basis_ids + leave, &enter, sizeof(int), cudaMemcpyHostToDevice));
 
         // ===========================================
         // update inverse basis w/ Sherman-Morrison
         // Formula: B_new^-1 = B^-1 - ( (d - e_p) * row_p(B^-1) ) / d[p]
-        double pivot_val;
-        cudaCheckError(cudaMemcpy(&pivot_val, gpu.d_d + leave, sizeof(double), cudaMemcpyDeviceToHost));
         
         // Extract p-th row of B^-1 into d_row_p
         cublasCheckError(cublasDcopy(
@@ -499,20 +506,18 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 
         // Prepare u = (d - e_p). 
         // Update: d_d[p] -= 1.0
-        double d_p_adjusted = pivot_val - 1.0;
-        cudaCheckError(cudaMemcpy(gpu.d_d + leave, &d_p_adjusted, sizeof(double), cudaMemcpyHostToDevice));
-
-        // Rank-1 Update
-        double update_alpha = -1.0 / pivot_val;
+        prepare_sherman_morrison_data<<<1, 1>>>(gpu.d_d, leave, gpu.d_scalar_val);
+        cublasCheckError(cublasSetPointerMode(gpu.handle_cublas, CUBLAS_POINTER_MODE_DEVICE));
 
         cublasCheckError(cublasDger(
             gpu.handle_cublas,
             m, m,
-            &update_alpha,
+            gpu.d_scalar_val,
             gpu.d_d, 1,
             gpu.d_row_p, 1,
             gpu.d_invB, m
         ));
+        cublasCheckError(cublasSetPointerMode(gpu.handle_cublas, CUBLAS_POINTER_MODE_HOST));
 
         basis[leave] = enter;
     }

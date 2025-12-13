@@ -5,7 +5,7 @@ NVCC        := nvcc
 CXX         := g++
 CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O3
 CPP_FLAGS	  := -march=native -ffp-contract=fast
-CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart -lcublas
+CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart -lcublas -lcusparse
 # LIBS        := -lcublas
 
 # Paths
@@ -41,8 +41,8 @@ BIG_M_BASENAMES := $(addprefix bm_, $(BIG_M_BASENAMES_RAW))
 # 4. Generate output targets (e.g., bin_solver/bm_v1_cpu.out)
 BIG_M_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(BIG_M_BASENAMES))
 
-# CPU solver target (Eigen-based, no CUDA) - renamed for consistency
-CPU_TARGET := $(BIN_SOLVER_DIR)/bm_v1_cpu.out
+# # CPU solver target (Eigen-based, no CUDA) - renamed for consistency
+# CPU_TARGET := $(BIN_SOLVER_DIR)/bm_v1_cpu.out
 
 # --- Two-Phase Sources (will be prefixed with tp_) ---
 TWO_PHASE_SRCS := $(wildcard $(SRC_TWO_PHASE_DIR)/*.cu)

@@ -6,6 +6,7 @@
 
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
+#include <cusparse.h>
 #include <cublas_v2.h>
 
 #include <thrust/device_ptr.h>
@@ -18,10 +19,6 @@
 
 #include <Eigen/Dense>
 
-constexpr int BLOCK_SIZE_1D = 256;
-constexpr int BLOCK_DIM_X = 32;
-constexpr int BLOCK_DIM_Y = 8;
-
 inline int get_grid_size(int n, int block_size) {
     return (n + block_size - 1) / block_size;
 }
@@ -31,6 +28,33 @@ inline int get_grid_size(int n, int block_size) {
 // ---------------------------
 // Util. Functions
 // ---------------------------
+
+struct CscMatrix {
+    std::vector<double> values;
+    std::vector<int> row_indices;
+    std::vector<int> col_ptr;
+    int nnz;
+};
+
+CscMatrix dense_to_csc(const Eigen::MatrixXd& A) {
+    CscMatrix mat;
+    int m = A.rows();
+    int n = A.cols();
+    
+    mat.col_ptr.push_back(0);
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < m; ++i) {
+            double val = A(i, j);
+            if (std::abs(val) > 1e-12) { // Tolerance for "zero"
+                mat.values.push_back(val);
+                mat.row_indices.push_back(i);
+            }
+        }
+        mat.col_ptr.push_back(mat.values.size());
+    }
+    mat.nnz = mat.values.size();
+    return mat;
+}
 
 void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
     int m = A.rows();
@@ -92,6 +116,14 @@ void cublasAssert(cublasStatus_t code, const char *file, int line) {
     }
 }
 
+#define cusparseCheckError(ans) { cusparseAssert((ans), __FILE__, __LINE__); }
+inline void cusparseAssert(cusparseStatus_t code, const char *file, int line) {
+    if (code != CUSPARSE_STATUS_SUCCESS) {
+        fprintf(stderr, "cuSPARSE Error: %d %s %d\n", code, file, line);
+        exit(code);
+    }
+}
+
 void print_gpu_info() {
     int deviceCount;
     cudaCheckError(cudaGetDeviceCount(&deviceCount));
@@ -147,6 +179,20 @@ void print_gpu_info() {
 struct CusolverResources {
     cusolverDnHandle_t handle;
     cublasHandle_t handle_cublas;
+    cusparseHandle_t handle_cusparse;
+
+    // Sparse data
+    double *d_A_val;
+    int *d_A_rowInd;
+    int *d_A_colPtr;
+    cusparseSpMatDescr_t matA_desc;
+    cusparseDnVecDescr_t vecLambda_desc;
+    cusparseDnVecDescr_t vecS_desc;
+    void* d_buffer_mv;
+    size_t bufferSize_mv;
+
+    double *d_col_dense;
+
     double *d_A;        // The entire matrix
     double *d_B;        // The basis matrix
     double *d_x;        // Solution vector
@@ -162,12 +208,15 @@ struct CusolverResources {
 
     int lwork;          // Workspace size
     int m;              // dimension
+    int n;
+    int nnz;            // number of non-zeros 
     int *d_basis_ids;
 
     // Sherman Morrison
     double *d_invB;    // Explicit inverse matrix
     double *d_lambda;  // Dual vector buffer
     double *d_row_p;   // Buffer to hold a row of B^-1 for the update
+    double *d_scalar_val; // for pivoting the morrison
 
     dim3 block1D;
     dim3 grid1D;       // For vector operations (size m)
@@ -175,9 +224,32 @@ struct CusolverResources {
     dim3 blockSize;    // 2D Block
     dim3 gridSize;     // 2D Grid
 
-    CusolverResources(int m_dim, int n_dim) : m(m_dim) {
+    CusolverResources(int m_dim, int n_dim, const CscMatrix& A_csc) : m(m_dim), n(n_dim), nnz(A_csc.nnz) {
         cusolverCheckError(cusolverDnCreate(&handle));
         cublasCheckError(cublasCreate(&handle_cublas));
+        cusparseCheckError(cusparseCreate(&handle_cusparse));
+
+        // Allocate sparse
+        cudaCheckError(cudaMalloc((void**)&d_A_val, sizeof(double) * nnz));
+        cudaCheckError(cudaMalloc((void**)&d_A_rowInd, sizeof(double) * nnz));
+        cudaCheckError(cudaMalloc((void**)&d_A_colPtr, sizeof(double) * (n + 1)));
+        
+        cudaCheckError(cudaMemcpy(d_A_val, A_csc.values.data(), sizeof(double) * nnz, cudaMemcpyHostToDevice));
+        cudaCheckError(cudaMemcpy(d_A_rowInd, A_csc.row_indices.data(), sizeof(int) * nnz, cudaMemcpyHostToDevice));
+        cudaCheckError(cudaMemcpy(d_A_colPtr, A_csc.col_ptr.data(), sizeof(int) * (n + 1), cudaMemcpyHostToDevice));
+
+        // --- Create Descriptors ---
+        // Create A as CSC
+        // csr
+        cusparseCheckError(cusparseCreateCsr(&matA_desc, n, m, nnz, 
+                                             d_A_colPtr, d_A_rowInd, d_A_val,
+                                             CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                             CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F));
+        // csc
+        cusparseCheckError(cusparseCreateCsc(&matA_desc, m, n, nnz,
+                                             d_A_colPtr, d_A_rowInd, d_A_val,
+                                             CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+                                             CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F));
 
         cudaCheckError(cudaMalloc((void**)&d_A, sizeof(double) * m * n_dim));
         cudaCheckError(cudaMalloc((void**)&d_B, sizeof(double) * m * m));
@@ -189,12 +261,27 @@ struct CusolverResources {
         cudaCheckError(cudaMalloc((void**)&d_c, sizeof(double) * n_dim));
         cudaCheckError(cudaMalloc((void**)&d_s, sizeof(double) * n_dim));
         cudaCheckError(cudaMalloc((void**)&d_info, sizeof(int)));
+        cudaCheckError(cudaMalloc((void**)&d_col_dense, sizeof(double) * m)); // New temp
 
         // Sherman Morrison
         cudaCheckError(cudaMalloc((void**)&d_invB, sizeof(double) * m * m));
         cudaCheckError(cudaMalloc((void**)&d_lambda, sizeof(double) * m));
         cudaCheckError(cudaMalloc((void**)&d_row_p, sizeof(double) * m));
+        cudaCheckError(cudaMalloc((void**)&d_scalar_val, sizeof(double)));
 
+        // create dense vector descriptors for SpMV
+        cusparseCheckError(cusparseCreateDnVec(&vecLambda_desc, m, d_lambda, CUDA_R_64F));
+        cusparseCheckError(cusparseCreateDnVec(&vecS_desc, n, d_s, CUDA_R_64F));
+
+        // SpMV workspace
+        double alpha = 1.0, beta = 0.0;
+        cusparseCheckError(cusparseSpMV_bufferSize(
+            handle_cusparse, CUSPARSE_OPERATION_TRANSPOSE,
+            &alpha, matA_desc, vecLambda_desc, &alpha, vecS_desc, CUDA_R_64F,
+            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize_mv));
+        cudaCheckError(cudaMalloc(&d_buffer_mv, bufferSize_mv));
+
+        // dense workspace
         cusolverCheckError(cusolverDnDgetrf_bufferSize(handle, m, m, d_B, m, &lwork));
         cudaCheckError(cudaMalloc((void**)&d_work, sizeof(double) * lwork));
 
@@ -210,6 +297,16 @@ struct CusolverResources {
     }
 
     ~CusolverResources() {
+        cusparseDestroySpMat(matA_desc);
+        cusparseDestroyDnVec(vecLambda_desc);
+        cusparseDestroyDnVec(vecS_desc);
+        cudaFree(d_A_val); 
+        cudaFree(d_A_rowInd); 
+        cudaFree(d_A_colPtr);
+        cudaFree(d_buffer_mv); 
+        cudaFree(d_col_dense);
+        cusparseDestroy(handle_cusparse);
+    
         cudaFree(d_A); 
         cudaFree(d_B); 
         cudaFree(d_x); 
@@ -221,11 +318,13 @@ struct CusolverResources {
         cudaFree(d_s); 
         cudaFree(d_info); 
         cudaFree(d_work);
+        cudaFree(d_col_dense);
         
         // Sherman Morrison
         cudaFree(d_invB); 
         cudaFree(d_lambda); 
         cudaFree(d_row_p);
+        cudaFree(d_scalar_val);
         
         cusolverDnDestroy(handle);
         cublasDestroy(handle_cublas);
@@ -284,6 +383,53 @@ __global__ void gather_vector_kernel(double *d_out, const double* d_in, const in
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < m) {
         d_out[idx] = d_in[d_indices[idx]];
+    }
+}
+
+__global__ void prepare_sherman_morrison_data(double* d_d, int p, double* d_alpha) {
+    if (threadIdx.x == 0) {
+        double pivot = d_d[p];
+
+        *d_alpha = -1.0 / pivot;
+        d_d[p] = pivot - 1.0;
+    }
+}
+
+// Sparse Kernels
+__global__ void scatter_column_dynamic(
+    double* __restrict__ d_dense_out, 
+    const double* __restrict__ d_val, 
+    const int* __restrict__ d_row_ind, 
+    const int* __restrict__ d_col_ptr, 
+    int col_idx, 
+    int m
+) {
+    // clear the dense column
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = gridDim.x * blockDim.x;
+    for (int i = tid; i < m; i += stride) {
+        d_dense_out[i] = 0.0;
+    }
+    __syncthreads();
+
+    if (tid == 0) {
+        int start = d_col_ptr[col_idx];
+        int end   = d_col_ptr[col_idx + 1];
+        for (int k = start; k < end; ++k) {
+            d_dense_out[d_row_ind[k]] = d_val[k];
+        }
+    }
+}
+
+__global__ void scatter_column_parallel(double* d_dense_out, 
+                                        const double* d_val, 
+                                        const int* d_row_ind, 
+                                        int start_idx, 
+                                        int count) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < count) {
+        int row = d_row_ind[start_idx + idx];
+        d_dense_out[row] = d_val[start_idx + idx];
     }
 }
 
@@ -379,7 +525,9 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
       basis[i] = n - m + i;  
     } 
 
-    CusolverResources gpu(m, n);
+    CscMatrix sparse_A = dense_to_csc(A);
+    CusolverResources gpu(m, n, sparse_A);
+
     cudaCheckError(cudaMemcpy(gpu.d_A, A.data(), sizeof(double) * m * n, cudaMemcpyHostToDevice));
     cudaCheckError(cudaMemcpy(gpu.d_c, c.data(), sizeof(double) * n, cudaMemcpyHostToDevice));
     
@@ -398,34 +546,30 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             compute_basis_inverse(gpu, b, m);
         }
 
-        // lambda = (B^-1)^T * cB
-        gather_vector_kernel<<<gpu.block1D, gpu.grid1D>>>(gpu.d_x, gpu.d_c, gpu.d_basis_ids, m);
-        
+        // calculate lambda = (B^-1)^T * cB
+        gather_vector_kernel<<<gpu.grid1D, gpu.block1D>>>(gpu.d_x, gpu.d_c, gpu.d_basis_ids, m);
         cublasCheckError(cublasDgemv(
-            gpu.handle_cublas, CUBLAS_OP_T, 
-            m, m,
-            &alpha_one, 
-            gpu.d_invB, m, 
-            gpu.d_x, 1,         // cB
-            &alpha_zero, 
-            gpu.d_lambda, 1     // Result into d_lambda
+            gpu.handle_cublas, CUBLAS_OP_T, m, m,
+            &alpha_one, gpu.d_invB, m, gpu.d_x, 1, 
+            &alpha_zero, gpu.d_lambda, 1
         ));
 
-        // pricing: s = c - A^T * lambda
+        // pricing s = c - A^T * lambda 
         cudaCheckError(cudaMemcpy(gpu.d_s, gpu.d_c, sizeof(double) * n, cudaMemcpyDeviceToDevice));
-        cublasCheckError(cublasDgemv(
-            gpu.handle_cublas, 
-            CUBLAS_OP_T, 
-            m, n,
-            &alpha_minus_one, 
-            gpu.d_A, m, 
-            gpu.d_lambda, 1,    // Read from d_lambda
-            &alpha_one, 
-            gpu.d_s, 1
+        
+        // SpMV: s = s - 1.0 * A^T * lambda
+        // Note: A is CSC. A^T is effectively CSR. 
+        // cusparseSpMV with TRANSPOSE on CSC is very efficient.
+        const double alpha_mone = -1.0;
+        cusparseCheckError(cusparseSpMV(
+            gpu.handle_cusparse, CUSPARSE_OPERATION_TRANSPOSE,
+            &alpha_mone, gpu.matA_desc, gpu.vecLambda_desc, 
+            &alpha_one, gpu.vecS_desc, CUDA_R_64F, 
+            CUSPARSE_SPMV_ALG_DEFAULT, gpu.d_buffer_mv
         ));
 
         // ----- Select entering variable
-        mask_basis_kernel<<<gpu.block1D, gpu.grid1D>>>(gpu.d_s, gpu.d_basis_ids, m);
+        mask_basis_kernel<<<gpu.grid1D, gpu.block1D>>>(gpu.d_s, gpu.d_basis_ids, m);
 
         thrust::device_ptr<double> s_ptr(gpu.d_s);
         auto max_iter = thrust::max_element(s_ptr, s_ptr + n);
@@ -448,16 +592,29 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
             return x;
         }
         
+        // extract entering column A_enter into d_col_dense 
+        cudaCheckError(cudaMemset(gpu.d_col_dense, 0, sizeof(double) * m));
+        
+        // Get column range from host (or copy col_ptr to host once)
+        int col_start, col_end;
+        cudaCheckError(cudaMemcpy(&col_start, &gpu.d_A_colPtr[enter], sizeof(int), cudaMemcpyDeviceToHost));
+        cudaCheckError(cudaMemcpy(&col_end, &gpu.d_A_colPtr[enter+1], sizeof(int), cudaMemcpyDeviceToHost));
+        int col_nnz = col_end - col_start;
+
+        if (col_nnz > 0) {
+            int threads = 256;
+            int blocks = (col_nnz + threads - 1) / threads;
+            scatter_column_parallel<<<blocks, threads>>>(
+                gpu.d_col_dense, gpu.d_A_val, gpu.d_A_rowInd, col_start, col_nnz
+            );
+        }
+
         // compute direction: d = B^-1 * A_enter
         cublasCheckError(cublasDgemv(
-            gpu.handle_cublas,  
-            CUBLAS_OP_N, 
-            m, m,
-            &alpha_one,
-            gpu.d_invB, m,            
-            gpu.d_A + (enter * m), 1, 
-            &alpha_zero,
-            gpu.d_d, 1
+            gpu.handle_cublas, CUBLAS_OP_N, m, m,
+            &alpha_one, gpu.d_invB, m,
+            gpu.d_col_dense, 1, // Use the scattered dense vector
+            &alpha_zero, gpu.d_d, 1
         ));
         
         // ratio test
@@ -480,14 +637,12 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
         }
         
         // update solution xB
-        update_solution_kernel<<<gpu.block1D, gpu.grid1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
+        update_solution_kernel<<<gpu.grid1D, gpu.block1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
         cudaCheckError(cudaMemcpy(gpu.d_basis_ids + leave, &enter, sizeof(int), cudaMemcpyHostToDevice));
 
         // ===========================================
         // update inverse basis w/ Sherman-Morrison
         // Formula: B_new^-1 = B^-1 - ( (d - e_p) * row_p(B^-1) ) / d[p]
-        double pivot_val;
-        cudaCheckError(cudaMemcpy(&pivot_val, gpu.d_d + leave, sizeof(double), cudaMemcpyDeviceToHost));
         
         // Extract p-th row of B^-1 into d_row_p
         cublasCheckError(cublasDcopy(
@@ -499,20 +654,18 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 
         // Prepare u = (d - e_p). 
         // Update: d_d[p] -= 1.0
-        double d_p_adjusted = pivot_val - 1.0;
-        cudaCheckError(cudaMemcpy(gpu.d_d + leave, &d_p_adjusted, sizeof(double), cudaMemcpyHostToDevice));
-
-        // Rank-1 Update
-        double update_alpha = -1.0 / pivot_val;
+        prepare_sherman_morrison_data<<<1, 1>>>(gpu.d_d, leave, gpu.d_scalar_val);
+        cublasCheckError(cublasSetPointerMode(gpu.handle_cublas, CUBLAS_POINTER_MODE_DEVICE));
 
         cublasCheckError(cublasDger(
             gpu.handle_cublas,
             m, m,
-            &update_alpha,
+            gpu.d_scalar_val,
             gpu.d_d, 1,
             gpu.d_row_p, 1,
             gpu.d_invB, m
         ));
+        cublasCheckError(cublasSetPointerMode(gpu.handle_cublas, CUBLAS_POINTER_MODE_HOST));
 
         basis[leave] = enter;
     }

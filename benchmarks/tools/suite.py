@@ -57,8 +57,11 @@ def run_warmup(suite, solver_name: str, verbose: bool = True) -> Tuple[float, fl
 
         # Run solver based on input_method
         input_method = solver.get('input_method', 'stdin')
+        # Append correct file extension based on solver type
+        problem_file_ending = ".canonical" if solver_name.startswith('bm') else ".twophase"
+        warmup_file = warmup_problem['file'] + problem_file_ending
         if input_method == 'stdin':
-            with open(warmup_problem['file'], 'r') as f:
+            with open(warmup_file, 'r') as f:
                 result = subprocess.run(
                     [solver['binary']],
                     stdin=f,
@@ -68,7 +71,7 @@ def run_warmup(suite, solver_name: str, verbose: bool = True) -> Tuple[float, fl
                 )
         else:  # file_arg
             result = subprocess.run(
-                [solver['binary'], warmup_problem['file']],
+                [solver['binary'], warmup_file],
                 capture_output=True,
                 text=True,
                 timeout=300
@@ -182,9 +185,12 @@ def run_suite(suite_name: str, measurements_dir: str = 'measurements',
 
             # Run benchmark
             try:
+                # Determine file extension based on solver type
+                problem_file_ending = ".canonical" if solver_name.startswith('bm') else ".twophase"
                 measurements = benchmark_problem(
                     solver_binary=solver['binary'],
                     problem_file=problem['file'],
+                    problem_file_ending=problem_file_ending,
                     problem_name=problem_name,
                     expected_optimum=problem['expected_optimum'],
                     num_repetitions=suite['repetitions'],

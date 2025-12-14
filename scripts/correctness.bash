@@ -91,7 +91,7 @@ fi
 
 for canonical_path in "${problems_array[@]}"; do
     problem_size=$(du -k "$canonical_path" 2>/dev/null | awk '{print $1}' || echo 0)
-    if [ "$problem_size" -gt "$MAX_SIZE" ]
+    if [ "$problem_size" -gt "$MAX_SIZE" ]; then
       continue
     fi
     # if no files, skip pattern literal

@@ -68,9 +68,7 @@ glop_baseline/build/
 test/experiment/
 
 # Any input files
-test/input/*
-test/experiment/*
-test/groundtruth/*
+test/*
 
 *.canonical
 *canonical.offset

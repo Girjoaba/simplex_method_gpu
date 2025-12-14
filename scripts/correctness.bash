@@ -31,8 +31,8 @@ if [ "$SIZE_CLASS" == "small" ]; then
     MAX_SIZE=600  # Run problems up to 600 KB
     SIZE_FILTER_INFO="Running SMALL problems (max 600 KB)"
 elif [ "$SIZE_CLASS" == "medium" ]; then
-    MAX_SIZE=10000 # Run problems up to 10 MB
-    SIZE_FILTER_INFO="Running MEDIUM problems (max 10000 KB)"
+    MAX_SIZE=100000 # Run problems up to 10 MB
+    SIZE_FILTER_INFO="Running MEDIUM problems (max 100000 KB)"
 elif [ "$SIZE_CLASS" == "big" ]; then
     # A large number to effectively disable the MAX_SIZE filter for 'big' problems
     MAX_SIZE=500000 
@@ -90,7 +90,10 @@ else
 fi
 
 for canonical_path in "${problems_array[@]}"; do
-    problem_size=$(du -k "$canonical_path" 2>/dev/null | awk '{print $1}' || echo 0)
+    base_name="${canonical_path%.*}"
+    mps_path="${base_name}.mps"
+    problem_size=$(du -k "$mps_path" 2>/dev/null | awk '{print $1}' || echo 0)
+    # problem_size=$(du -k "$canonical_path" 2>/dev/null | awk '{print $1}' || echo 0)
     if [ "$problem_size" -gt "$MAX_SIZE" ]; then
       continue
     fi

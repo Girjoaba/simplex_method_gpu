@@ -354,7 +354,7 @@ int main() {
 	int m, n, n_surplus, n_slack;
 	double optimum, offset;
 
-	std::cin >> m >> n >> n_surplus >> n_slack >> optimum >> offset;
+	std::cin >> m >> n >> n_surplus >> n_slack >> offset;
 
 	int identity_start = n + n_surplus;
 	int artificial_start = identity_start + n_slack;

@@ -15,9 +15,11 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file')
+parser.add_argument('output_file')
 file = parser.parse_args().file
+output_file = parser.parse_args().output_file
 
-model = gp.read('input/netlib/mps/' + file + '.mps')
+model = gp.read(file)
 # IMPORTANT
 # gurobi's presolve discards the old objective constant term
 offset = model.ObjCon
@@ -28,14 +30,14 @@ model = model.presolve()
 if (set(model.getAttr("VType")) != { 'C' }):
     sys.exit('Model is not continuous')
 
-with open("input/stats.csv", "r") as f:
-    reader = csv.reader(f, delimiter=",")
-    row = next((r for r in reader if r[0].lower() == file), None)
+# with open("input/stats.csv", "r") as f:
+#     reader = csv.reader(f, delimiter=",")
+#     row = next((r for r in reader if r[0].lower() == file), None)
 
-if row is None:
-    sys.exit('Failed to find the optimum in stats.csv')
-
-optimum = float(row[6])
+# if row is None:
+#     sys.exit('Failed to find the optimum in stats.csv')
+#
+# optimum = float(row[6])
 
 # =================== Step 2 ===================
 
@@ -52,15 +54,15 @@ c = np.array([v.Obj for v in vars])
 senses = np.array([c.Sense for c in constraints])
 
 offset += model.ObjCon
-print(f"Initial offset: {offset}")
-print(f"Objective scale: {model.params.ObjScale}")
+# print(f"Initial offset: {offset}")
+# print(f"Objective scale: {model.params.ObjScale}")
 
 
 if model.ModelSense == gp.GRB.MINIMIZE:
-    print("Converting minimisation to maximisation problem.")
+    # print("Converting minimisation to maximisation problem.")
     offset *= -1.0
     c *= -1.0
-    optimum *= -1.0
+    # optimum *= -1.0
 
 # =================== Step 3 ===================
 
@@ -166,11 +168,11 @@ assert c.shape == (n + n_surplus + n_slack,)
 
 # =================== Step 6 ===================
 
-print(f"{n_surplus} surpluses, {n_slack} slacks, {m - n_slack} artificials")
+# print(f"{n_surplus} surpluses, {n_slack} slacks, {m - n_slack} artificials")
 
-with open('input/problems/' + file + '.txt', "w") as f:
+with open(output_file, "w") as f:
     f.write(f"{m} {n} {n_surplus} {n_slack}\n")
-    f.write(f"{repr(float(optimum))} {repr(offset)}\n")
+    f.write(f"{repr(offset)}\n")
     for i in range(m):
         f.write(" ".join(repr(float(x)) for x in A[i, :]) + '\n')
     f.write(" ".join(repr(float(x)) for x in b) + '\n')

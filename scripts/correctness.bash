@@ -10,7 +10,8 @@ set -euo pipefail
 # | 1.3.      compare with the gt result       |
 # ---------------------------------------------|
 
-make
+# We are all grown up, run make yourself
+# make
 
 if [ $# -eq 0 ]; then
     echo "Error: Missing solver argument."

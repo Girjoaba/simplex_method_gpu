@@ -26,7 +26,7 @@ GROUNDTRUTH_DIR="./test/groundtruth"
 EXPERIMENT_DIR="./test/experiment"
 
 SOLVER_BIN="$1"
-SIZE_CLASS="${2:small}"
+SIZE_CLASS="small"
 if [ "$SIZE_CLASS" == "small" ]; then
     MAX_SIZE=600  # Run problems up to 600 KB
     SIZE_FILTER_INFO="Running SMALL problems (max 600 KB)"

@@ -13,10 +13,10 @@ set -euo pipefail
 # We are all grown up, run make yourself
 # make
 
-if [ $# -eq 0 ]; then
-    echo "Error: Missing solver argument."
-    echo "Usage: $0 <path_to_solver_binary>"
-    echo "Example: $0 ./bin_solver/v1_cpu.out"
+if [ $# -lt 1 ]; then
+    echo "Error incorrect number of arguments."
+    echo "Usage: $0 <path_to_solver_binary> [small|medium|big]"
+    echo "Example: $0 ./bin_solver/v1_cpu.out small"
     exit 1
 fi
 
@@ -26,6 +26,24 @@ GROUNDTRUTH_DIR="./test/groundtruth"
 EXPERIMENT_DIR="./test/experiment"
 
 SOLVER_BIN="$1"
+SIZE_CLASS="${2:small}"
+if [ "$SIZE_CLASS" == "small" ]; then
+    MAX_SIZE=600  # Run problems up to 600 KB
+    SIZE_FILTER_INFO="Running SMALL problems (max 600 KB)"
+elif [ "$SIZE_CLASS" == "medium" ]; then
+    MAX_SIZE=3000 # Run problems up to 3000 KB (3 MB)
+    SIZE_FILTER_INFO="Running MEDIUM problems (max 3000 KB)"
+elif [ "$SIZE_CLASS" == "big" ]; then
+    # A large number to effectively disable the MAX_SIZE filter for 'big' problems
+    MAX_SIZE=500000 
+    SIZE_FILTER_INFO="Running BIG problems (max 500000 KB, effectively all)"
+elif [ "$SIZE_CLASS" == "all" ]; then
+    MAX_SIZE=500000 # Run all
+    SIZE_FILTER_INFO="Running ALL problems (no size filter)"
+else
+    echo "error: invalid size class '$SIZE_CLASS'. Must be one of: small, medium, big, or omitted." >&2
+    exit 1
+fi
 
 # =====================================================
 # Filter flag:
@@ -75,6 +93,10 @@ else
 fi
 
 for canonical_path in "${problems_array[@]}"; do
+    problem_size=$(du -k "$canonical_path" 2>/dev/null | awk '{print $1}' || echo 0)
+    if [ "$problem_size" -gt "$MAX_SIZE" ]
+      continue
+    fi
     # if no files, skip pattern literal
     if [ ! -f "$canonical_path" ]; then
         continue

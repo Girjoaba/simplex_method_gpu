@@ -545,6 +545,14 @@ SUITES = {
         "warmup_iterations": 50,
         "warmup_problem": "afiro",
     },
+    "verify_all_solvers": {
+        "description": "Quick verification of all current solvers on tiny problems",
+        "problems": ["netlib_afiro", "netlib_sc50a", "netlib_kb2"],
+        "solvers": ["bm_b5", "bm_v8", "bm_v10", "bm_v11", "tp_v1"],
+        "repetitions": 5,
+        "warmup_iterations": 2,
+        "warmup_problem": "netlib_afiro",
+    },
 }
 
 # -----------------------------------------------------------------------------

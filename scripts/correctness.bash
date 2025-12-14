@@ -37,9 +37,6 @@ elif [ "$SIZE_CLASS" == "big" ]; then
     # A large number to effectively disable the MAX_SIZE filter for 'big' problems
     MAX_SIZE=500000 
     SIZE_FILTER_INFO="Running BIG problems (max 500000 KB, effectively all)"
-elif [ "$SIZE_CLASS" == "all" ]; then
-    MAX_SIZE=500000 # Run all
-    SIZE_FILTER_INFO="Running ALL problems (no size filter)"
 else
     echo "error: invalid size class '$SIZE_CLASS'. Must be one of: small, medium, big, or omitted." >&2
     exit 1

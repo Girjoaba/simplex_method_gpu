@@ -55,6 +55,7 @@ __pycache__/
 
 # Benchmark outputs
 benchmarks/measurements/
+benchmarks/input
 benchmarks/plots/
 benchmarks/tables/
 benchmarks/*.log

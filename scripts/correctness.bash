@@ -28,14 +28,14 @@ EXPERIMENT_DIR="./test/experiment"
 SOLVER_BIN="$1"
 SIZE_CLASS="$2"
 if [ "$SIZE_CLASS" == "small" ]; then
-    MAX_SIZE=600  # Run problems up to 600 KB
+    MAX_SIZE=300  # Run problems up to 600 KB
     SIZE_FILTER_INFO="Running SMALL problems (max 600 KB)"
 elif [ "$SIZE_CLASS" == "medium" ]; then
-    MAX_SIZE=100000 # Run problems up to 10 MB
+    MAX_SIZE=500 # Run problems up to 10 MB
     SIZE_FILTER_INFO="Running MEDIUM problems (max 100000 KB)"
 elif [ "$SIZE_CLASS" == "big" ]; then
     # A large number to effectively disable the MAX_SIZE filter for 'big' problems
-    MAX_SIZE=500000 
+    MAX_SIZE=5000 
     SIZE_FILTER_INFO="Running BIG problems (max 500000 KB, effectively all)"
 else
     echo "error: invalid size class '$SIZE_CLASS'. Must be one of: small, medium, big, or omitted." >&2

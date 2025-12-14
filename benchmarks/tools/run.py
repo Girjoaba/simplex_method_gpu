@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tools.util import parse_solver_output, validate_optimum, format_time, format_ci
 
 
-def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
+def benchmark_problem(solver_binary: str, problem_file: str, problem_file_ending: str, problem_name: str,
                      expected_optimum: float, num_repetitions: int = 100,
                      verbose: bool = True, input_method: str = 'stdin') -> List[Dict]:
     """
@@ -43,6 +43,8 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_name: str,
         FileNotFoundError: If solver binary or problem file doesn't exist
         RuntimeError: If solver fails or produces incorrect result
     """
+    # Very ugly fix...
+    problem_file = problem_file + problem_file_ending
     # Validate inputs
     if not os.path.exists(solver_binary):
         raise FileNotFoundError(f"Solver binary not found: {solver_binary}")
@@ -149,6 +151,8 @@ def run_single_benchmark(solver_name: str, problem_name: str,
     measurements = benchmark_problem(
         solver_binary=solver['binary'],
         problem_file=problem['file'],
+        # VERY UGLY NR 2:
+        problem_file_ending=".canonical" if solver.startswith('bm') else ".twophase",
         problem_name=problem_name,
         expected_optimum=problem['expected_optimum'],
         num_repetitions=num_repetitions,

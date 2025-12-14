@@ -31,8 +31,8 @@ if [ "$SIZE_CLASS" == "small" ]; then
     MAX_SIZE=600  # Run problems up to 600 KB
     SIZE_FILTER_INFO="Running SMALL problems (max 600 KB)"
 elif [ "$SIZE_CLASS" == "medium" ]; then
-    MAX_SIZE=3000 # Run problems up to 3000 KB (3 MB)
-    SIZE_FILTER_INFO="Running MEDIUM problems (max 3000 KB)"
+    MAX_SIZE=10000 # Run problems up to 10 MB
+    SIZE_FILTER_INFO="Running MEDIUM problems (max 10000 KB)"
 elif [ "$SIZE_CLASS" == "big" ]; then
     # A large number to effectively disable the MAX_SIZE filter for 'big' problems
     MAX_SIZE=500000 

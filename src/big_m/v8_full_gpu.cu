@@ -282,7 +282,7 @@ struct MinPairOp {
 // ---------------------------
 
 
-#define MAX_ITERS 5000
+#define MAX_ITERS 100000
 
 const double OPTIMALITY_TOL = 1e-6;
 const double PIVOT_TOL      = 1e-5;

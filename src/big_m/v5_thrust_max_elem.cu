@@ -214,7 +214,7 @@ __global__ void mask_basis_kernel(double *d_s, const int* d_basis_ids, int m) {
 // ---------------------------
 
 
-#define MAX_ITERS 5000
+#define MAX_ITERS 100000
 
 const double OPTIMALITY_TOL = 1e-6;
 const double PIVOT_TOL      = 1e-5;

@@ -508,7 +508,7 @@ void compute_basis_inverse(CusolverResources& gpu, const Eigen::VectorXd& b_host
     ));
 }
 
-#define MAX_ITERS 10000
+#define MAX_ITERS 100000
 #define REINVERSION_FREQ 30 // prevent drift with this frequency
 
 const double OPTIMALITY_TOL = 1e-6;

@@ -144,7 +144,6 @@ for canonical_path in "${problems_array[@]}"; do
         echo "$stderr"
         rm -rf "$temp_stdout" "$temp_stderr" "$temp_time"
         solver_errors=$((solver_errors + 1))
-
         continue
     fi
     success=$((success + 1))
@@ -154,7 +153,7 @@ for canonical_path in "${problems_array[@]}"; do
     gt_val=$(tr -d ' \t\r\n' < "$gt")
 
     # extract "Optimum found: NUM" from experiment
-    exp_line=$(grep '^Optimum found:' "$stdout" || true)
+    exp_line=$( echo "$stdout" | grep '^Optimum found:' || true)
 
     compared=$((compared + 1))
 

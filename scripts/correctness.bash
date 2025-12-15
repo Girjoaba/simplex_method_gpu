@@ -188,12 +188,24 @@ for canonical_path in "${problems_array[@]}"; do
         if (ab > 1) tol = tol * ab;
         exit !(da <= tol);
     }'; then
-        real_time=$(grep '^real' "$temp_time" | awk '{print $2}' | tr -d '[:space:]')
-        echo "[compare] $problem_name: OK ✅ (got=$exp_val, expected=$gt_val) in "$real_time
-        correct=$((correct + 1))
-    else
-        echo "[compare] ❌ $problem_name: MISMATCH (got=$exp_val, expected=$gt_val)"
-        wrong=$((wrong + 1))
+      real_time=$(grep '^real' "$temp_stderr" | awk '{print $2}' | tr -d '[:space:]')
+      status_msg="OK ✅"
+      detail_msg="(got=$exp_val, expected=$gt_val)"
+      printf "[compare] %-25s\t%-10s\t%-60s\tTime: %s\n" \
+          "$problem_name" \
+          "$status_msg" \
+          "$detail_msg" \
+          "$real_time"
+        
+      correct=$((correct + 1))
+  else
+    status_msg="MISMATCH ❌"
+    detail_msg="(got=$exp_val, expected=$gt_val)"
+    printf "[compare] %-25s\t%-10s\t%-60s\n" \
+        "$problem_name" \
+        "$status_msg" \
+        "$detail_msg"
+    wrong=$((wrong + 1))
     fi
     rm -rf "$temp_stdout" "$temp_stderr" "$temp_time"
 done

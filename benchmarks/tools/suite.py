@@ -58,12 +58,15 @@ def run_warmup(suite, solver_name: str, verbose: bool = True) -> Tuple[float, fl
         # Run solver based on input_method
         input_method = solver.get('input_method', 'stdin')
         # Append correct file extension based on solver type
-        problem_file_ending = ".canonical" if solver_name.startswith('bm') else ".twophase"
+        # bm_* and gurobi use .canonical, tp_* uses .twophase
+        problem_file_ending = ".twophase" if solver_name.startswith('tp') else ".canonical"
         warmup_file = warmup_problem['file'] + problem_file_ending
+        # Parse solver command (may be "python3 script.py" or just "binary")
+        solver_cmd = solver['binary'].split()
         if input_method == 'stdin':
             with open(warmup_file, 'r') as f:
                 result = subprocess.run(
-                    [solver['binary']],
+                    solver_cmd,
                     stdin=f,
                     capture_output=True,
                     text=True,
@@ -71,7 +74,7 @@ def run_warmup(suite, solver_name: str, verbose: bool = True) -> Tuple[float, fl
                 )
         else:  # file_arg
             result = subprocess.run(
-                [solver['binary'], warmup_file],
+                solver_cmd + [warmup_file],
                 capture_output=True,
                 text=True,
                 timeout=300
@@ -186,7 +189,8 @@ def run_suite(suite_name: str, measurements_dir: str = 'measurements',
             # Run benchmark
             try:
                 # Determine file extension based on solver type
-                problem_file_ending = ".canonical" if solver_name.startswith('bm') else ".twophase"
+                # bm_* and gurobi use .canonical, tp_* uses .twophase
+                problem_file_ending = ".twophase" if solver_name.startswith('tp') else ".canonical"
                 measurements = benchmark_problem(
                     solver_binary=solver['binary'],
                     problem_file=problem['file'],

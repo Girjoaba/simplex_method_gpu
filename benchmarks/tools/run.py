@@ -45,9 +45,18 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_file_ending
     """
     # Very ugly fix...
     problem_file = problem_file + problem_file_ending
+
+    # Parse solver command (may be "python3 script.py" or just "binary")
+    solver_cmd = solver_binary.split()
+
     # Validate inputs
-    if not os.path.exists(solver_binary):
-        raise FileNotFoundError(f"Solver binary not found: {solver_binary}")
+    if not os.path.exists(solver_cmd[0]) and not any(os.path.exists(os.path.join(p, solver_cmd[0])) for p in os.environ.get('PATH', '').split(':')):
+        # Check if it's in PATH (like python3)
+        import shutil
+        if not shutil.which(solver_cmd[0]):
+            raise FileNotFoundError(f"Solver binary not found: {solver_cmd[0]}")
+    if len(solver_cmd) > 1 and not os.path.exists(solver_cmd[-1]):
+        raise FileNotFoundError(f"Solver script not found: {solver_cmd[-1]}")
     if not os.path.exists(problem_file):
         raise FileNotFoundError(f"Problem file not found: {problem_file}")
 
@@ -65,7 +74,7 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_file_ending
             if input_method == 'stdin':
                 with open(problem_file, 'r') as f:
                     result = subprocess.run(
-                        [solver_binary],
+                        solver_cmd,
                         stdin=f,
                         capture_output=True,
                         text=True,
@@ -73,7 +82,7 @@ def benchmark_problem(solver_binary: str, problem_file: str, problem_file_ending
                     )
             else:  # file_arg
                 result = subprocess.run(
-                    [solver_binary, problem_file],
+                    solver_cmd + [problem_file],
                     capture_output=True,
                     text=True,
                     timeout=300  # 5 minute timeout
@@ -148,11 +157,17 @@ def run_single_benchmark(solver_name: str, problem_name: str,
     solver = SOLVERS[solver_name]
     problem = PROBLEMS[problem_name]
 
+    # Determine file extension based on solver type
+    # bm_* and gurobi use .canonical, tp_* uses .twophase
+    if solver_name.startswith('tp'):
+        problem_file_ending = ".twophase"
+    else:
+        problem_file_ending = ".canonical"
+
     measurements = benchmark_problem(
         solver_binary=solver['binary'],
         problem_file=problem['file'],
-        # VERY UGLY NR 2:
-        problem_file_ending=".canonical" if solver.startswith('bm') else ".twophase",
+        problem_file_ending=problem_file_ending,
         problem_name=problem_name,
         expected_optimum=problem['expected_optimum'],
         num_repetitions=num_repetitions,

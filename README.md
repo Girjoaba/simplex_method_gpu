@@ -3,45 +3,26 @@ Initial repository for the DPHPC course at ETH.
 
 # How to compile and run the program
 
-We use the glpk library as groundtruth. To compile both the cuda code and the glpk code:
+In order to compile all binaries, simpyl use:
 ```bash
 make
 ```
+Don't get confused by Eigen warnings, those just clutter the make output.
 
-```bash
-nvcc --std=c++20 src/solver.cu -o bin/solver.out -ccbin /usr/bin/g++-13 -lcublas 
-./bin/solver.out input/sample.txt
-```
+If you want to change compiler flags, please only work with the Makefile in order to allow for batch compilation before benchmarking.
+
+IMPORTANT: All two-phase binaries should be prefixed with `tp_` and all big-m binaries with `bm_`. This is used during testing and benchmarking to derive the preprocessing steps, removing the prefix **will** crash.
 
 ## Testing
+### Generating testing ground truth
+Since the solvers require different inputs and we still compare with the gurobi output (We probably should instead compare with the netlib recorded optimal values!). You have to run the `scripts/generate_test_environment.bash` once. This is already done correctly and **can not** be done on the container, since it runs gurobi... If there's need to generate the grounId truth again, due to changes in the `src/gurobi/interface_*_gutobi.py` files report quickly in the chat and I can regnerate the values on my local machine.
 
-1. Generate the groundtruth only once.
-```bash
-bash scripts/generate_groundtruth.bash`
-```
-2. Test your implementation (can change the `TARGET_PROBLEM=` flag inside the script to test a specific problem).
-```bash
-bash scripts/test_solver_correctness.bash [YOUR_SOLVER] # defaults to "bin_solver/solver1.out"
-```
+### Running the correctness tests
+If the groundtruth is available the tests can be run by running `scripts/correctness.bash {your_binary} {small|medium|large}`.
+The size indicator (last argument) indicates on what size of problems should be benchmarked. Right now we determine size by simply looking at the diskspace of the `.mps` for a test. This will be redone to have more meaningful test suites. For the mean time I would just run it on `medium` to get a reasonable correctness check.
 
-<!-- ### Folder Structure
-```text
-├── Makefile
-├── problems
-│   └── *.mps
-├── scripts/
-│   ├── generate_groundtruth.bash           (No need to run this)
-│   └── test_solver_correctness.bash        (Run this)
-├── test/
-│   ├── groundtruth/  
-│   │   └── *.txt
-│   └── experiment/           (Your outputs here)
-│       └── *.out
-``` -->
+I will also add a time indication per test run in order to provide more information on how well the test does. 
 
-# Remarks
-Works on Andrei's machine (Ubuntu x64, g++ 13.4, 1050 Ti, Driver 580, CUDA Toolkit 12.9)
-and also on the student cluster (after adding module `cuda/13.0.2`)
 
 # TODO:
 - [ ] include unbounded problems as correct

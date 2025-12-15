@@ -149,25 +149,81 @@ def create_time_vs_problem_plot(solver_names: List[str], suite_name: str,
     def time_formatter(y, pos):
         """Format y-axis as readable time values (ms or s)"""
         if y >= 1.0:
-            return f'{y:.1f}s'
+            if y >= 100:
+                return f'{y:.0f}s'
+            elif y >= 10:
+                return f'{y:.0f}s'
+            else:
+                return f'{y:.1f}s'
         elif y >= 0.01:
             return f'{y*1000:.0f}ms'
         else:
             return f'{y*1000:.1f}ms'
 
-    # Set explicit tick locations at readable intervals
-    y_ticks = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0]
+    # Collect all time values to determine y-axis range
+    all_times = []
+    for solver_name in solver_names:
+        stats = solver_stats.get(solver_name, {})
+        for problem_name in problem_names:
+            if problem_name in stats:
+                all_times.append(stats[problem_name]['mean'])
+
+    # Generate y-ticks based on data range
+    if all_times:
+        min_time, max_time = min(all_times), max(all_times)
+        # Standard tick values spanning ms to minutes
+        all_possible_ticks = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5,
+                              1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
+        # Filter to ticks within expanded data range
+        y_ticks = [t for t in all_possible_ticks if min_time * 0.5 <= t <= max_time * 2]
+        if not y_ticks:
+            y_ticks = [min_time, max_time]
+    else:
+        y_ticks = [0.01, 0.1, 1.0, 10.0]
+
     ax.yaxis.set_major_locator(FixedLocator(y_ticks))
     ax.yaxis.set_major_formatter(FuncFormatter(time_formatter))
+
+    # Set x-axis ticks at each problem size
+    all_sizes = []
+    size_labels = {}
+    for problem_name in problem_names:
+        if problem_name in PROBLEMS:
+            prob = PROBLEMS[problem_name]
+            size = prob['size']
+            all_sizes.append(size)
+            # Label: m×n dimensions
+            size_labels[size] = f"{prob['m']}×{prob['n']}"
+
+    if all_sizes:
+        from matplotlib.ticker import NullFormatter
+        sorted_sizes = sorted(all_sizes)
+        ax.xaxis.set_major_locator(FixedLocator(sorted_sizes))
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: size_labels.get(x, '')))
+        ax.xaxis.set_minor_locator(FixedLocator([]))  # Remove minor ticks
+        ax.xaxis.set_minor_formatter(NullFormatter())
+
+        # Use 90° rotation for labels to prevent horizontal overlap
+        # Font size scales with number of problems to ensure readability
+        n_problems = len(sorted_sizes)
+        if n_problems <= 5:
+            label_fontsize = 10
+        elif n_problems <= 8:
+            label_fontsize = 9
+        else:
+            label_fontsize = 8
+
+        plt.setp(ax.get_xticklabels(), rotation=90, ha='center', fontsize=label_fontsize)
 
     # Formatting
     ax.set_xlabel('Problem Size, m×n (log scale)', fontsize=PLOT_STYLE['label_fontsize'])
     ax.set_ylabel('Mean Time\n(log scale)', fontsize=PLOT_STYLE['label_fontsize'], rotation=0, ha='right')
 
-    # Title with chip name and repetition/warmup info from suite
+    # Title with hardware name and repetition/warmup info from suite
     n_problems = len([p for p in problem_names if p in solver_stats.get(solver_names[0], {})])
-    title_line1 = 'Simplex Solver on Apple M4 Max CPU'
-    if 'warmup_iterations' in suite and 'warmup_problem' in suite:
+    hardware = suite.get('hardware', 'Apple M4 Max CPU')
+    title_line1 = f'Simplex Solver on {hardware}'
+    if suite.get('warmup_iterations', 0) > 0 and suite.get('warmup_problem'):
         warmup_info = f', {suite["warmup_iterations"]}x {suite["warmup_problem"]} warmup'
     else:
         warmup_info = ''

@@ -136,7 +136,7 @@ for canonical_path in "${problems_array[@]}"; do
 
     stdout=$(cat "$temp_stdout")
     stderr=$(cat "$temp_stderr")
-    if [ "$solver_exit_code" -ne 0] ; then
+    if [ "$solver_exit_code" -ne 0 ] ; then
       
         echo "[warn] ⭕ solver failed for $canonical_path, skipping"
         echo "stdout:"

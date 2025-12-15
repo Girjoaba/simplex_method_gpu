@@ -83,11 +83,11 @@ else
     readarray -t problems_array < <(find "$INPUT_DIR" -maxdepth 1 -type f -name "*.twophase")
 fi
 
-if [ -n "$TARGET_PROBLEM" ]; then
-    echo "[info] filtering to problem: $TARGET_PROBLEM"
-else
-    echo "[info] running on all problems: ${problems_array[@]}"
-fi
+# if [ -n "$TARGET_PROBLEM" ]; then
+#     echo "[info] filtering to problem: $TARGET_PROBLEM"
+# else
+#     echo "[info] running on all problems: ${problems_array[@]}"
+# fi
 
 for canonical_path in "${problems_array[@]}"; do
     base_name="${canonical_path%.*}"
@@ -137,7 +137,6 @@ for canonical_path in "${problems_array[@]}"; do
     stdout=$(cat "$temp_stdout")
     stderr=$(cat "$temp_stderr")
     if [ "$solver_exit_code" -ne 0 ] ; then
-      
         echo "[warn] ⭕ solver failed for $canonical_path, skipping"
         echo "stdout:"
         echo "$stdout"

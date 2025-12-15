@@ -188,7 +188,7 @@ for canonical_path in "${problems_array[@]}"; do
         if (ab > 1) tol = tol * ab;
         exit !(da <= tol);
     }'; then
-        real_time=$(grep '^real' "$temp_stderr" | awk '{print $2}' | tr -d '[:space:]')
+        real_time=$(grep '^real' "$temp_time" | awk '{print $2}' | tr -d '[:space:]')
         echo "[compare] $problem_name: OK ✅ (got=$exp_val, expected=$gt_val) in "$real_time
         correct=$((correct + 1))
     else

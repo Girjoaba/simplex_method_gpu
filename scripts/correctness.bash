@@ -125,14 +125,27 @@ for canonical_path in "${problems_array[@]}"; do
     fi
 
     attempted=$((attempted + 1))
-    # echo "[run] $canonical_path"
 
     # 1) run solver on canonical file
-    out_file="$EXPERIMENT_DIR/$problem_name.txt"
-    if ! "$SOLVER_BIN" < "$canonical_path" > "$out_file"; then
+    temp_stdout=$(mktemp --suffix=.stdout.tmp)
+    temp_stderr=$(mktemp --suffix=.stderr.tmp)
+    temp_time=$(mktemp --suffix=.time.tmp)
+    { time "$SOLVER_BIN" < "$canonical_path" > "$temp_stdout" 2>> "$temp_stderr" ; } 2>> "$temp_time"
+
+    solver_exit_code=$?
+
+    stdout=$(cat "$temp_stdout")
+    stderr=$(cat "$temp_stderr")
+    if [ "$solver_exit_code" -ne 0] ; then
+      
         echo "[warn] ⭕ solver failed for $canonical_path, skipping"
-        rm -f "$out_file"
+        echo "stdout:"
+        echo "$stdout"
+        echo "stderr:"
+        echo "$stderr"
+        rm -rf "$temp_stdout" "$temp_stderr" "$temp_time"
         solver_errors=$((solver_errors + 1))
+
         continue
     fi
     success=$((success + 1))
@@ -142,7 +155,7 @@ for canonical_path in "${problems_array[@]}"; do
     gt_val=$(tr -d ' \t\r\n' < "$gt")
 
     # extract "Optimum found: NUM" from experiment
-    exp_line=$(grep '^Optimum found:' "$out_file" || true)
+    exp_line=$(grep '^Optimum found:' "$stdout" || true)
 
     compared=$((compared + 1))
 
@@ -161,7 +174,13 @@ for canonical_path in "${problems_array[@]}"; do
         wrong=$((wrong + 1))
         continue
     fi
-
+    # Handle NaN returns
+    if ! echo "$exp_val" | grep -E '^[+\-]?[0-9.]*([Ee][+\-][0-9]+)?$' >/dev/null || \ ! echo "$gt_val" | grep -E '^[+\-]?[0-9.]*([Ee][+\-][0-9]+)?$' >/dev/null; then
+      echo "[compare] ❌ $problem_name: value is NOT a valid number (e.g., NaN or invalid format) -> WRONG"
+      echo "         (Got: $exp_val, Expected: $gt_val)"
+      wrong=$((wrong + 1))
+      continue
+    fi
     # compare with a small tolerance using awk (handles scientific notation)
     # tolerance = 1e-4 * max(1, |gt|)
     if awk -v a="$exp_val" -v b="$gt_val" 'BEGIN {
@@ -171,12 +190,14 @@ for canonical_path in "${problems_array[@]}"; do
         if (ab > 1) tol = tol * ab;
         exit !(da <= tol);
     }'; then
-        echo "[compare] $problem_name: OK ✅ (got=$exp_val, expected=$gt_val)"
+        real_time=$(grep '^real' "$temp_stderr" | awk '{print $2}' | tr -d '[:space:]')
+        echo "[compare] $problem_name: OK ✅ (got=$exp_val, expected=$gt_val) in "$real_time
         correct=$((correct + 1))
     else
         echo "[compare] ❌ $problem_name: MISMATCH (got=$exp_val, expected=$gt_val)"
         wrong=$((wrong + 1))
     fi
+    rm -rf "$temp_stdout" "$temp_stderr" "$temp_time"
 done
 
 echo "===================================="

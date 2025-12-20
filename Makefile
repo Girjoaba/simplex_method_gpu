@@ -1,3 +1,4 @@
+ARCH ?= sm_80
 EIGEN_DIR ?= $(HOME)/eigen-3.4.0
 
 # Compiler flags
@@ -5,7 +6,7 @@ NVCC        := nvcc
 CXX         := g++
 CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O3
 CPP_FLAGS	  := -march=native -ffp-contract=fast
-CUDA_FLAGS  := -arch=sm_80 -lcusolver -lcudart -lcublas -lcusparse
+CUDA_FLAGS  := -arch=$(ARCH) -lcusolver -lcudart -lcublas -lcusparse --expt-relaxed-constexpr
 # LIBS        := -lcublas
 
 # Paths
@@ -58,7 +59,7 @@ TWO_PHASE_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(TWO_PHASE_BASENAME
 # ------------------ Targets -------------------- |
 # =============================================== |
 
-all:  $(BIG_M_TARGETS) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
+all: $(BIG_M_TARGETS) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
 
 # Build GLPK tools
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
@@ -79,13 +80,7 @@ $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
 # === two-phase-method ===
 $(BIN_SOLVER_DIR)/tp_%.out: $(SRC_TWO_PHASE_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
-	# Hardcoded, whatever
-	$(NVCC) $< -o $@ \
-        --std=c++20 \
-        -ccbin /usr/bin/g++-13 \
-        -I $(EIGEN_DIR) \
-        -lcublas -lcusolver \
-        --expt-relaxed-constexpr
+	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $< -o $@
 
 # === Run Rules ===
 # Allows running specific versions like: make run-v1_cpu

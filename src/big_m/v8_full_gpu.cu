@@ -460,16 +460,21 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 int main() {
     print_gpu_info();
 
-    int n, m;
-    // starts with n, m
-    std::cin >> m >> n;
+    int m, n, n_surplus, n_slack;
+    double offset;
+    // starts with m, n
+    std::cin >> m >> n >> n_surplus >> n_slack >> offset;
+
+    int identity_start = n + n_surplus;
+	int artificial_start = identity_start + n_slack;
+	int artificial_end = identity_start + m;
     
-    Eigen::MatrixXd A(m, n);
-    Eigen::VectorXd b(m), c(n);
+    Eigen::MatrixXd A(m, artificial_end);
+    Eigen::VectorXd b(m), c(artificial_end);
 
     // followed by A
     for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < artificial_end; j++) {
             std::cin >> A(i, j);
         }
     }
@@ -478,15 +483,18 @@ int main() {
         std::cin >> b(i);
     }
     // then c
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < artificial_start; i++) {
         std::cin >> c(i);
     }
+
+    double M = std::max(1e9, c.head(artificial_start).cwiseAbs().maxCoeff() * 1e6);
+    c.tail(m - n_slack).setConstant(-M);
+
     equilibrate(A, b, c);
     
-    
-    Eigen::VectorXd z = simplex_method(A, b, c, n, m);
+    Eigen::VectorXd z = simplex_method(A, b, c, artificial_end, m);
     double optimum = c.dot(z);  // Compute c^T * z
     // std::cout << "Output:\n" << z.transpose() << "\n";
-    std::cout << std::setprecision(15) << "Optimum found: " << optimum << "\n";
+    std::cout << std::setprecision(15) << "Optimum found: " << (optimum + offset) << "\n";
 
 }

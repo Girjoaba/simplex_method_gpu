@@ -37,50 +37,25 @@ enum class SolveStatus { MaxIter, OptimumFound, Unbounded };
 
 /* ===================== UTILITIES ===================== */
 
-void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
-	int m = A.rows();
-	int artificial_end = A.cols();
-
-	for (int i = 0; i < m; ++i) {
-		double max_val = std::abs(b(i));
-		for (int j = 0; j < artificial_end; ++j)
-			max_val = std::max(max_val, std::abs(A(i, j)));
-
-		double scale = 1.0 / max_val;
-		A.row(i) *= scale;
-		b(i) *= scale;
-	}
-
-	for (int j = 0; j < artificial_end - m; j++) {
-		double max_val = 0.0;
-		for (int i = 0; i < m; i++)
-			max_val = std::max(max_val, std::abs(A(i, j)));
-
-		double scale = 1.0 / max_val;
-		A.col(j) *= scale;
-		c(j) *= scale;
-	}
-}
-
 #define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
 inline void cudaAssert(cudaError_t code, const char *file, int line) {
 	if (code != cudaSuccess) {
-		fprintf(stderr, "CUDA Error: %s %s %d\n", cudaGetErrorString(code), file, line);
-		exit(code);
+		std::cerr << "CUDA Error: " << cudaGetErrorString(code) << ' ' << file << ' ' << line << '\n';
+		std::exit(EXIT_FAILURE);
 	}
 }
 #define cusolverCheckError(ans) { cusolverAssert((ans), __FILE__, __LINE__); }
 inline void cusolverAssert(cusolverStatus_t code, const char *file, int line) {
 	if (code != CUSOLVER_STATUS_SUCCESS) {
-		fprintf(stderr, "cuSOLVER Error: %d %s %d\n", code, file, line);
-		exit(code);
+		std::cerr << "cuSOLVER Error: " << code << ' ' << file << ' ' << line << '\n';
+		std::exit(EXIT_FAILURE);
 	}
 }
 #define cublasCheckError(ans) { cublasAssert((ans), __FILE__, __LINE__); }
 void cublasAssert(cublasStatus_t code, const char *file, int line) {
 	if (code != CUBLAS_STATUS_SUCCESS) {
-		fprintf(stderr, "cuBLAS Error: %d %s %d\n", code, file, line);
-		exit(code);
+		std::cerr << "cuBLAS Error: " << code << ' ' << file << ' ' << line << '\n';
+		std::exit(EXIT_FAILURE);
 	}
 }
 #define cuda_malloc(d_ptr, n) { cuda_malloc_impl(&d_ptr, n, #d_ptr); }
@@ -88,8 +63,8 @@ template <typename T>
 void cuda_malloc_impl(T** d_ptr, int n, const char* name) {
 	cudaError_t code = cudaMalloc((void**)d_ptr, n * sizeof(T));
 	if (code != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed for %s: %s\n", name, cudaGetErrorString(code));
-		exit(code);
+		std::cerr << "cudaMalloc failed for " << name << ": " << cudaGetErrorString(code) << '\n';
+		std::exit(EXIT_FAILURE);
 	}
 }
 #define cuda_memcpy(dst, src, n, kind) cuda_memcpy_impl(dst, src, n, kind, #dst)
@@ -97,8 +72,8 @@ template <typename T>
 void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const char* name) {
 	cudaError_t code = cudaMemcpy((void*)dst, (void*)src, size * sizeof(T), kind);
 	if (code != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed for %s: %s\n", name, cudaGetErrorString(code));
-		exit(code);
+		std::cerr << "cudaMempcy failed for " << name << ": " << cudaGetErrorString(code) << '\n';
+		std::exit(EXIT_FAILURE);
 	}
 }
 
@@ -201,8 +176,7 @@ struct IsNonZero {
 /* ===================== CORE LOGIC ===================== */
 
 std::pair<double, SolveStatus> core(
-	DeviceResources& gpu,
-	int m, int n,
+	DeviceResources& gpu, int m, int n,
 	const dim3 block_dim, const dim3 grid_dim_1D, const dim3 grid_dim
 ) {
 
@@ -212,7 +186,6 @@ std::pair<double, SolveStatus> core(
 	for (iteration = 1; iteration <= MAX_ITERS; ++iteration) {
 		// solve for y: B^T * y^T = cB^T
 		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_y, gpu.d_c, gpu.d_B_ids, m);
-		cudaDeviceSynchronize();
 		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_y, m, gpu.d_info));
 
 		// compute rc^T = -A^T * y^T + c^T
@@ -221,7 +194,6 @@ std::pair<double, SolveStatus> core(
 
 		// select entering variable
 		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_rc, gpu.d_B_ids, -1.0e20, m);
-		cudaDeviceSynchronize();
 		thrust::device_ptr<double> thrust_rc(gpu.d_rc);
 		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
 		int enter = iterator - thrust_rc;
@@ -254,15 +226,13 @@ std::pair<double, SolveStatus> core(
 		cuda_memcpy(gpu.d_B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
 		assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
 		update_xB<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
-		cudaDeviceSynchronize();
 		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
 	}
-	// std::cout << "iter " << iteration << '\n';
+	std::cout << "Iterations: " << iteration << '\n';
 
 	double z;
 	if (status == SolveStatus::OptimumFound) {
 		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_y, gpu.d_c, gpu.d_B_ids, m);
-		cudaDeviceSynchronize();
 		cublasDdot(gpu.handle_cublas, m, gpu.d_y, 1, gpu.d_xB, 1, &z);
 	}
 
@@ -294,7 +264,6 @@ std::pair<double, SolveStatus> solve(
 	const dim3 grid_dim_1D(div_up(m, BLOCK_DIM_1D));
 
 	assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
-	cudaDeviceSynchronize();
 	cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
 	cuda_memcpy(gpu.d_xB, b.data(), m, cudaMemcpyHostToDevice);
 	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_xB, m, gpu.d_info));
@@ -303,7 +272,7 @@ std::pair<double, SolveStatus> solve(
 	
 	auto [sum_artificials, status_phase_one] = core(gpu, m, artificial_end, block_dim, grid_dim_1D, grid_dim);
 	if (status_phase_one != SolveStatus::OptimumFound || fabs(sum_artificials) > OPTIMALITY_TOL) {
-		std::cout << "!! Phase I failed, the optimum is " << sum_artificials << '\n';
+		std::cerr << "!! Phase I failed, the optimum is " << sum_artificials << '\n';
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -323,7 +292,6 @@ std::pair<double, SolveStatus> solve(
 		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, artificial_start, &ONE, gpu.d_A, m, gpu.d_y, 1, &ZERO, gpu.d_rc, 1));
 		// mask basic variables
 		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_rc, gpu.d_B_ids, 0.0, m);
-		cudaDeviceSynchronize();
 		// pick the first element with a non-zero coefficient
 		thrust::device_ptr<double> first(gpu.d_rc);
 		auto last = first + artificial_start;
@@ -331,14 +299,13 @@ std::pair<double, SolveStatus> solve(
 		int enter = iterator == last ? -1 : (iterator - first);
 
 		if (enter == -1) {
-			fprintf(stdout, "!! Var %d: constraint %d is redundant\n", ix, row);
+			std::cerr << "!! Var " << ix << ": " << "constraint " << row << " is redundant\n";
 			std::exit(EXIT_FAILURE);
 		}
 
 		// update B_ids and factorise B
 		cuda_memcpy(gpu.d_B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
 		assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
-		cudaDeviceSynchronize();
 		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
 	}
 
@@ -352,7 +319,7 @@ std::pair<double, SolveStatus> solve(
 
 int main() {
 	int m, n, n_surplus, n_slack;
-	double optimum, offset;
+	double offset;
 
 	std::cin >> m >> n >> n_surplus >> n_slack >> offset;
 
@@ -373,14 +340,12 @@ int main() {
 	for (int i = 0; i < artificial_start; ++i)
 		std::cin >> c(i);
 
-	// equilibrate(A, b, c);
 	auto [z, status] = solve(A, b, c, m, n, identity_start, artificial_start, artificial_end);
 
 	switch (status) {
 		case SolveStatus::OptimumFound:
-		std::cout << std::scientific << std::uppercase << std::setprecision(5)
-		          << "Optimum found: " << (z + offset) << '\n';
-		          // << "Known " << optimum << '\n';
+			std::cout << std::scientific << std::uppercase << std::setprecision(10)
+			          << "Optimum found: " << (z + offset) << '\n';
 			break;
 
 		case SolveStatus::Unbounded:
@@ -388,7 +353,7 @@ int main() {
 			break;
 
 		case SolveStatus::MaxIter:
-			std::cout << "MAX_ITER exceeded.\n";
+			std::cerr << "!! MAX_ITER exceeded.\n";
 			break;
 	}
 }

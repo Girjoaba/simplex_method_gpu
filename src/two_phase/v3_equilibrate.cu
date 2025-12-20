@@ -37,6 +37,31 @@ enum class SolveStatus { MaxIter, OptimumFound, Unbounded };
 
 /* ===================== UTILITIES ===================== */
 
+void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
+	int m = A.rows();
+	int artificial_end = A.cols();
+
+	for (int i = 0; i < m; ++i) {
+		double max_val = std::abs(b(i));
+		for (int j = 0; j < artificial_end - m; ++j)
+			max_val = std::max(max_val, std::abs(A(i, j)));
+
+		double scale = 1.0 / std::max(1.0, max_val);
+		A.row(i) *= scale;
+		b(i) *= scale;
+	}
+
+	for (int j = 0; j < artificial_end - m; j++) {
+		double max_val = 0.0;
+		for (int i = 0; i < m; i++)
+			max_val = std::max(max_val, std::abs(A(i, j)));
+
+		double scale = 1.0 / max_val;
+		A.col(j) *= scale;
+		c(j) *= scale;
+	}
+}
+
 #define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
 inline void cudaAssert(cudaError_t code, const char *file, int line) {
 	if (code != cudaSuccess) {
@@ -88,20 +113,20 @@ struct DeviceResources {
 	cusolverDnHandle_t handle;
 	cublasHandle_t handle_cublas;
 
-	double *d_A, *d_xB, *d_c;
-	double *d_d;   // direction
-	double *d_rc;  // reduced cost
-	int m, *d_B_ids;
+	double *A, *c, *xB;
+	double *d;   // direction
+	double *rc;  // reduced cost
+	int m, *B_ids;
 
-	double *d_B, *d_work, *d_y;
-	int lwork, *d_ipiv, *d_info;
+	double *B, *work, *y;
+	int lwork, *ipiv, *info;
 
 	std::vector<PtrAlloc<double>> double_allocs;
 	std::vector<PtrAlloc<int>> int_allocs;
 
 	DeviceResources(int m, int n) : m(m),
-		double_allocs {{d_A, m * n}, {d_B, m * m}, {d_y, m}, {d_xB, m}, {d_d, m}, {d_c, n}, {d_rc, n}},
-		int_allocs {{d_ipiv, m}, {d_B_ids, m}, {d_info, 1}} {
+		double_allocs {{A, m * n}, {c, n}, {xB, m}, {d, m}, {rc, n}, {B, m * m}, {y, m}},
+		int_allocs {{ipiv, m}, {B_ids, m}, {info, 1}} {
 
 		cusolverCheckError(cusolverDnCreate(&handle));
 		cublasCheckError(cublasCreate(&handle_cublas));
@@ -109,8 +134,8 @@ struct DeviceResources {
 		for (auto &[ptr, size] : double_allocs) cuda_malloc(ptr, size);
 		for (auto &[ptr, size] : int_allocs)    cuda_malloc(ptr, size);
 
-		cusolverCheckError(cusolverDnDgetrf_bufferSize(handle, m, m, d_B, m, &lwork));
-		cuda_malloc(d_work, lwork);
+		cusolverCheckError(cusolverDnDgetrf_bufferSize(handle, m, m, B, m, &lwork));
+		cuda_malloc(work, lwork);
 	}
 
 	~DeviceResources() {
@@ -185,16 +210,16 @@ std::pair<double, SolveStatus> core(
 
 	for (iteration = 1; iteration <= MAX_ITERS; ++iteration) {
 		// solve for y: B^T * y^T = cB^T
-		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_y, gpu.d_c, gpu.d_B_ids, m);
-		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_y, m, gpu.d_info));
+		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
+		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.B, m, gpu.ipiv, gpu.y, m, gpu.info));
 
 		// compute rc^T = -A^T * y^T + c^T
-		cuda_memcpy(gpu.d_rc, gpu.d_c, n, cudaMemcpyDeviceToDevice);
-		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, n, &MINUS_ONE, gpu.d_A, m, gpu.d_y, 1, &ONE, gpu.d_rc, 1));
+		cuda_memcpy(gpu.rc, gpu.c, n, cudaMemcpyDeviceToDevice);
+		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, n, &MINUS_ONE, gpu.A, m, gpu.y, 1, &ONE, gpu.rc, 1));
 
 		// select entering variable
-		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_rc, gpu.d_B_ids, -1.0e20, m);
-		thrust::device_ptr<double> thrust_rc(gpu.d_rc);
+		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.rc, gpu.B_ids, -1.0e20, m);
+		thrust::device_ptr<double> thrust_rc(gpu.rc);
 		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
 		int enter = iterator - thrust_rc;
 		
@@ -204,15 +229,15 @@ std::pair<double, SolveStatus> core(
 		}
 		
 		// solve for d: B * d = A_enter
-		cuda_memcpy(gpu.d_d, gpu.d_A + (enter * m), m, cudaMemcpyDeviceToDevice);
-		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_d, m, gpu.d_info));
+		cuda_memcpy(gpu.d, gpu.A + (enter * m), m, cudaMemcpyDeviceToDevice);
+		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.B, m, gpu.ipiv, gpu.d, m, gpu.info));
 		
 		// ratio test
 		auto [theta_min, leave] = thrust::transform_reduce(
 			thrust::device,
 			thrust::make_counting_iterator(0),
 			thrust::make_counting_iterator(m),
-			RatioTestUnaryOp{gpu.d_xB, gpu.d_d},
+			RatioTestUnaryOp{gpu.xB, gpu.d},
 			thrust::make_pair(DBL_MAX, -1),       // init value
 			MinPairOp()
 		);
@@ -223,17 +248,17 @@ std::pair<double, SolveStatus> core(
 		}
 
 		// update xB and B_ids, factorise B
-		cuda_memcpy(gpu.d_B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
-		assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
-		update_xB<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_xB, gpu.d_d, leave, theta_min, m);
-		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
+		cuda_memcpy(gpu.B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
+		assemble_basis<<<grid_dim, block_dim>>>(gpu.A, gpu.B, gpu.B_ids, m);
+		update_xB<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.xB, gpu.d, leave, theta_min, m);
+		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.B, m, gpu.work, gpu.ipiv, gpu.info));
 	}
-	std::cout << "Iterations: " << iteration << '\n';
+	std::cout << "Iterations: " << std::max(iteration, MAX_ITERS) << '\n';
 
 	double z;
 	if (status == SolveStatus::OptimumFound) {
-		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_y, gpu.d_c, gpu.d_B_ids, m);
-		cublasDdot(gpu.handle_cublas, m, gpu.d_y, 1, gpu.d_xB, 1, &z);
+		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
+		cublasDdot(gpu.handle_cublas, m, gpu.y, 1, gpu.xB, 1, &z);
 	}
 
 	return std::make_pair(z, status);
@@ -255,18 +280,18 @@ std::pair<double, SolveStatus> solve(
 		cost_phase_one[i] = i < artificial_start ? 0.0 : -1.0;
 
 	DeviceResources gpu(m, artificial_end);
-	cuda_memcpy(gpu.d_A, A.data(), m * artificial_end, cudaMemcpyHostToDevice);
-	cuda_memcpy(gpu.d_c, cost_phase_one.data(), artificial_end, cudaMemcpyHostToDevice);
-	cuda_memcpy(gpu.d_B_ids, B_ids.data(), m, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.A, A.data(), m * artificial_end, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.c, cost_phase_one.data(), artificial_end, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.B_ids, B_ids.data(), m, cudaMemcpyHostToDevice);
 
 	const dim3 block_dim(BLOCK_DIM_X, BLOCK_DIM_Y);
 	const dim3 grid_dim(div_up(m, block_dim.x), div_up(m, block_dim.y));
 	const dim3 grid_dim_1D(div_up(m, BLOCK_DIM_1D));
 
-	assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
-	cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
-	cuda_memcpy(gpu.d_xB, b.data(), m, cudaMemcpyHostToDevice);
-	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_xB, m, gpu.d_info));
+	assemble_basis<<<grid_dim, block_dim>>>(gpu.A, gpu.B, gpu.B_ids, m);
+	cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.B, m, gpu.work, gpu.ipiv, gpu.info));
+	cuda_memcpy(gpu.xB, b.data(), m, cudaMemcpyHostToDevice);
+	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.B, m, gpu.ipiv, gpu.xB, m, gpu.info));
 
 	// =============== Phase I and Phase II ===============
 	
@@ -276,7 +301,7 @@ std::pair<double, SolveStatus> solve(
 		std::exit(EXIT_FAILURE);
 	}
 
-	cuda_memcpy(B_ids.data(), gpu.d_B_ids, m, cudaMemcpyDeviceToHost);
+	cuda_memcpy(B_ids.data(), gpu.B_ids, m, cudaMemcpyDeviceToHost);
 
 	for (int i = 0; i < m; ++i) {
 		int ix = B_ids[i];
@@ -284,35 +309,35 @@ std::pair<double, SolveStatus> solve(
 
 		// build a unit vector to extract a row of B_inv
 		int row = ix - identity_start;
-		cudaMemset(gpu.d_y, 0, m * sizeof(double));
-		cuda_memcpy(gpu.d_y + row, &ONE, 1, cudaMemcpyHostToDevice);
+		cudaMemset(gpu.y, 0, m * sizeof(double));
+		cuda_memcpy(gpu.y + row, &ONE, 1, cudaMemcpyHostToDevice);
 		// solve for y: B^T * y^T = e_row
-		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_y, m, gpu.d_info));
+		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.B, m, gpu.ipiv, gpu.y, m, gpu.info));
 		// compute rc = A^T * y^T
-		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, artificial_start, &ONE, gpu.d_A, m, gpu.d_y, 1, &ZERO, gpu.d_rc, 1));
+		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, artificial_start, &ONE, gpu.A, m, gpu.y, 1, &ZERO, gpu.rc, 1));
 		// mask basic variables
-		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.d_rc, gpu.d_B_ids, 0.0, m);
+		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.rc, gpu.B_ids, 0.0, m);
 		// pick the first element with a non-zero coefficient
-		thrust::device_ptr<double> first(gpu.d_rc);
+		thrust::device_ptr<double> first(gpu.rc);
 		auto last = first + artificial_start;
 		auto iterator = thrust::find_if(first, last, IsNonZero());
 		int enter = iterator == last ? -1 : (iterator - first);
 
 		if (enter == -1) {
-			std::cerr << "!! Var " << ix << ": " << "constraint " << row << " is redundant\n";
+			std::cerr << "Var " << ix << ": " << "constraint " << row << " is redundant\n";
 			std::exit(EXIT_FAILURE);
 		}
 
 		// update B_ids and factorise B
-		cuda_memcpy(gpu.d_B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
-		assemble_basis<<<grid_dim, block_dim>>>(gpu.d_A, gpu.d_B, gpu.d_B_ids, m);
-		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.d_B, m, gpu.d_work, gpu.d_ipiv, gpu.d_info));
+		cuda_memcpy(gpu.B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
+		assemble_basis<<<grid_dim, block_dim>>>(gpu.A, gpu.B, gpu.B_ids, m);
+		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.B, m, gpu.work, gpu.ipiv, gpu.info));
 	}
 
 	// update xB and the cost
-	cuda_memcpy(gpu.d_xB, b.data(), m, cudaMemcpyHostToDevice);
-	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.d_B, m, gpu.d_ipiv, gpu.d_xB, m, gpu.d_info));
-	cuda_memcpy(gpu.d_c, c.data(), artificial_start, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.xB, b.data(), m, cudaMemcpyHostToDevice);
+	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.B, m, gpu.ipiv, gpu.xB, m, gpu.info));
+	cuda_memcpy(gpu.c, c.data(), artificial_start, cudaMemcpyHostToDevice);
 
 	return core(gpu, m, artificial_start, block_dim, grid_dim_1D, grid_dim);
 }
@@ -340,20 +365,21 @@ int main() {
 	for (int i = 0; i < artificial_start; ++i)
 		std::cin >> c(i);
 
+	equilibrate(A, b, c);
 	auto [z, status] = solve(A, b, c, m, n, identity_start, artificial_start, artificial_end);
 
 	switch (status) {
 		case SolveStatus::OptimumFound:
 			std::cout << std::scientific << std::uppercase << std::setprecision(10)
 			          << "Optimum found: " << (z + offset) << '\n';
-			break;
+			return EXIT_SUCCESS;
 
 		case SolveStatus::Unbounded:
 			std::cout << "Problem unbounded.\n";
-			break;
+			return EXIT_SUCCESS;
 
 		case SolveStatus::MaxIter:
-			std::cerr << "!! MAX_ITER exceeded.\n";
-			break;
+			std::cerr << "Reached " << MAX_ITERS << " iterations.\n";
+			return EXIT_FAILURE;
 	}
 }

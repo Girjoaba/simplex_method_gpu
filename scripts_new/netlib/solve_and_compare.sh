@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+target_problem=""
+
 if [ $# -lt 1 ]; then
 	echo "Usage: $0 <path_to_solver_binary> <max_number_of_nonzeros>"
 	echo "152K non-zeros will cover all the problems"
@@ -23,12 +25,17 @@ fi
 
 correct=0
 wrong=0
+errors=0
 total_time=0
 
 while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 
 	problem="${UPPER_CASE_PROBLEM,,}"
 	preprocessed_file="test/netlib/preprocessed/${problem}.preprocessed"
+
+	if [[ -n "${target_problem}" ]]; then
+		[[ "$problem" == "$target_problem" ]] || continue
+	fi
 
 	if [ ! -f "$preprocessed_file" ]; then
 		echo "File not found: $preprocessed_file" >&2
@@ -39,13 +46,14 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 	tmp_stderr=$(mktemp --suffix=.stderr.tmp)
 	tmp_time=$(mktemp --suffix=.time.tmp)
 
-	{ time -p "$solver_bin" < "$preprocessed_file" > "$tmp_stdout" 2>> "$tmp_stderr" ; } 2>> "$tmp_time"
-	exit_code=$?
+	exit_code=0
+	{ time -p "$solver_bin" < "$preprocessed_file" > "$tmp_stdout" 2>> "$tmp_stderr" ; } 2>> "$tmp_time" || exit_code=$?
 
 	if [ "$exit_code" -ne 0 ] ; then
-		echo "[warn] ⭕ solver failed for: $preprocessed_file"
+		printf "[error]   %-25s\tERR 🔴\n" "$problem"
 		cat "$tmp_stderr"
 		rm -rf "$tmp_stdout" "$tmp_stderr" "$tmp_time"
+		errors=$((errors + 1))
 		continue
 	fi
 
@@ -53,6 +61,8 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 
 	if [ -z "$optimum_line" ]; then
 		echo "[compare] ❌ $problem: experiment missing 'Optimum found:' -> WRONG"
+		cat "$tmp_stdout"
+		rm -rf "$tmp_stdout" "$tmp_stderr" "$tmp_time"
 		wrong=$((wrong + 1))
 		continue
 	fi
@@ -64,10 +74,10 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 			abs_b = (b > 0) ? b : -b
 			exit !(diff <= 1e-4 * ((abs_b > 1) ? abs_b : 1))
 	}'; then
-		status_msg="OK ✅"
+		status_msg="OK  ✅"
 		correct=$((correct + 1))
 	else
-		status_msg="KO ❌"
+		status_msg="KO  ❌"
 		wrong=$((wrong + 1))
 	fi
 
@@ -84,6 +94,7 @@ done < <(tail -n +2 "$problem_summary" | awk -F',' -v max="$2" '$4 < max')
 
 echo "===================================="
 echo "Correct ✅                : $correct"
-echo "Wrong ❌                  : $wrong"
-echo "Time ⏰                   : ${total_time}s"
+echo "Wrong   ❌                : $wrong"
+echo "Errors  🔴                : $errors"
+echo "Time    ⏰                : ${total_time}s"
 echo "===================================="

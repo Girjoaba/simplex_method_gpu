@@ -51,15 +51,15 @@ void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
 		b(i) *= scale;
 	}
 
-	for (int j = 0; j < artificial_end - m; j++) {
-		double max_val = 0.0;
-		for (int i = 0; i < m; i++)
-			max_val = std::max(max_val, std::abs(A(i, j)));
+	// for (int j = 0; j < artificial_end - m; j++) {
+	// 	double max_val = 0.0;
+	// 	for (int i = 0; i < m; i++)
+	// 		max_val = std::max(max_val, std::abs(A(i, j)));
 
-		double scale = 1.0 / max_val;
-		A.col(j) *= scale;
-		c(j) *= scale;
-	}
+	// 	double scale = 1.0 / max_val;
+	// 	A.col(j) *= scale;
+	// 	c(j) *= scale;
+	// }
 }
 
 #define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }

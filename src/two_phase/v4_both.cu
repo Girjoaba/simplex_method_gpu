@@ -51,15 +51,15 @@ void equilibrate(Eigen::MatrixXd& A, Eigen::VectorXd& b, Eigen::VectorXd& c) {
 		b(i) *= scale;
 	}
 
-	for (int j = 0; j < artificial_end - m; j++) {
-		double max_val = 0.0;
-		for (int i = 0; i < m; i++)
-			max_val = std::max(max_val, std::abs(A(i, j)));
+	// for (int j = 0; j < artificial_end - m; j++) {
+	// 	double max_val = 0.0;
+	// 	for (int i = 0; i < m; i++)
+	// 		max_val = std::max(max_val, std::abs(A(i, j)));
 
-		double scale = 1.0 / max_val;
-		A.col(j) *= scale;
-		c(j) *= scale;
-	}
+	// 	double scale = 1.0 / max_val;
+	// 	A.col(j) *= scale;
+	// 	c(j) *= scale;
+	// }
 }
 
 #define cudaCheckError(ans) { cudaAssert((ans), __FILE__, __LINE__); }
@@ -160,12 +160,6 @@ __global__ void mask_basis(double* vec, const int* B_ids, double val, int m) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < m)
 		vec[B_ids[i]] = val;
-}
-
-__global__ void update_xB(double* __restrict__ xB, const double* d, int leave, double theta_min, int m) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < m)
-		xB[i] = (i != leave) ? (xB[i] - theta_min * d[i]) : theta_min;
 }
 
 __global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m) {

@@ -137,12 +137,6 @@ __global__ void mask_basis(double* vec, const int* B_ids, double val, int m) {
 		vec[B_ids[i]] = val;
 }
 
-__global__ void update_xB(double* __restrict__ xB, const double* d, int leave, double theta_min, int m) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < m)
-		xB[i] = (i != leave) ? (xB[i] - theta_min * d[i]) : theta_min;
-}
-
 __global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < m)

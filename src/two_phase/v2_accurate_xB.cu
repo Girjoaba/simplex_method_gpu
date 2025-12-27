@@ -265,7 +265,9 @@ std::pair<double, SolveStatus> solve(
 	
 	auto [sum_artificials, status_phase_one] = core(gpu, m, artificial_end, block_dim, grid_dim_1D, grid_dim);
 	if (status_phase_one != SolveStatus::OptimumFound || fabs(sum_artificials) > OPTIMALITY_TOL) {
-		std::cerr << "Phase I reached " << MAX_ITERS << " iterations, the optimum is " << sum_artificials << '\n';
+		std::cerr << "Phase I failed: "
+		          << (status_phase_one == SolveStatus::Unbounded ? "Unbounded" : "MaxIter")
+		          << ", " << sum_artificials << '\n';
 		std::exit(EXIT_FAILURE);
 	}
 

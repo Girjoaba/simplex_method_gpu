@@ -118,7 +118,7 @@ le = (senses == '<')
 senses[flip & ge] = '<'
 senses[flip & le] = '>'
 
-M = max(1e9, 1e6 * np.max(np.abs(c)))
+M = float(max(1e9, 1e6 * np.max(np.abs(c))))
 
 # =================== Step 5 ===================
 
@@ -145,20 +145,19 @@ c = np.concatenate((c, -np.ones(m - n_slack, dtype=c.dtype)))
 
 assert A.shape == (m, n + n_surplus + m)
 assert b.shape == (m,)
-assert c.shape == A.shape
+assert c.shape == (n + n_surplus + m,)
 
 # =================== Step 6 ===================
 
 # equilibrate the system
 
-row_maxes = np.max(np.abs(A), axis=1)
-row_scales = np.maximum(row_maxes, np.abs(b))
-A = A / row_scales[:, np.newaxis]
-b = b / row_scales
+# row_scales = np.max(np.abs(A), axis=1)
+# A /= row_scales[:, np.newaxis]
+# b /= row_scales
 
-col_scales = np.max(np.abs(A), axis=0)
-A = A / col_scales
-c = c / col_scales
+# col_scales = np.max(np.abs(A), axis=0)
+# A /= col_scales
+# c /= col_scales
 
 # =================== Step 7 ===================
 

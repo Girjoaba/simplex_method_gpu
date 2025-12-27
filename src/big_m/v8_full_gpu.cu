@@ -456,41 +456,25 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
     return x;
 }
 
-
 int main() {
     print_gpu_info();
 
     int m, n, n_surplus, n_slack;
     double offset, M;
-    // starts with m, n
     std::cin >> m >> n >> n_surplus >> n_slack >> offset >> M;
 
-    int identity_start = n + n_surplus;
-	int artificial_end = identity_start + m;
-    
-    Eigen::MatrixXd A(m, artificial_end);
-    Eigen::VectorXd b(m), c(artificial_end);
+	int last_col = n + n_surplus + m;
+    Eigen::MatrixXd A(m, last_col);
+    Eigen::VectorXd b(m), c(last_col);
 
-    // followed by A
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < artificial_end; j++) {
-            std::cin >> A(i, j);
-        }
-    }
-    // then, b
-    for (int i = 0; i < m; i++) {
-        std::cin >> b(i);
-    }
-    // then c
-    for (int i = 0; i < artificial_end; i++) {
-        std::cin >> c(i);
-    }
+    for (int i = 0; i < m; i++) for (int j = 0; j < last_col; j++) std::cin >> A(i, j);
+    for (int i = 0; i < m; i++) std::cin >> b(i);
+    for (int i = 0; i < last_col; i++) std::cin >> c(i);
 
     c.tail(m - n_slack) *= M;
     
-    Eigen::VectorXd z = simplex_method(A, b, c, artificial_end, m);
-    double optimum = c.dot(z);  // Compute c^T * z
-    // std::cout << "Output:\n" << z.transpose() << "\n";
-    std::cout << std::setprecision(15) << "Optimum found: " << (optimum + offset) << "\n";
-
+    Eigen::VectorXd z = simplex_method(A, b, c, last_col, m);
+    double optimum = c.dot(z);
+    std::cout << std::scientific << std::uppercase << std::setprecision(10)
+              << "Optimum found: " << (optimum + offset) << "\n";
 }

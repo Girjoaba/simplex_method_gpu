@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# Activate Python venv for gurobipy
+source .venv/bin/activate
+
 LOG_DIR="test/netlib/smoke_test_logs"
 mkdir -p "$LOG_DIR"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)

@@ -19,9 +19,9 @@
 
 #include <utility>
 
-#define MAX_ITERS 5000
+#define MAX_ITERS 100000
 
-constexpr double OPTIMALITY_TOL = 1e-10;
+constexpr double OPTIMALITY_TOL = 1e-6;
 constexpr double PIVOT_TOL      = 1e-5;
 constexpr double ROW_TOL        = 1e-12;
 
@@ -193,7 +193,7 @@ std::pair<double, SolveStatus> core(
 		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, n, &MINUS_ONE, gpu.A, m, gpu.y, 1, &ONE, gpu.rc, 1));
 
 		// select entering variable
-		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.rc, gpu.B_ids, -1.0e20, m);
+		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.rc, gpu.B_ids, -1.0, m);
 		thrust::device_ptr<double> thrust_rc(gpu.rc);
 		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
 		int enter = iterator - thrust_rc;
@@ -228,10 +228,10 @@ std::pair<double, SolveStatus> core(
 		update_xB<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.xB, gpu.d, leave, theta_min, m);
 		cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.B, m, gpu.work, gpu.ipiv, gpu.info));
 	}
-	std::cout << "Iterations: " << std::max(iteration, MAX_ITERS) << '\n';
+	std::cout << "Iterations: " << std::min(iteration, MAX_ITERS) << '\n';
 
 	double z;
-	if (status == SolveStatus::OptimumFound) {
+	if (status != SolveStatus::Unbounded) {
 		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
 		cublasDdot(gpu.handle_cublas, m, gpu.y, 1, gpu.xB, 1, &z);
 	}
@@ -243,16 +243,13 @@ std::pair<double, SolveStatus> core(
 
 std::pair<double, SolveStatus> solve(
 	const Eigen::MatrixXd& A, const Eigen::VectorXd& b, const Eigen::VectorXd& c,
+	const std::vector<double>& cost_phase_one,
 	int m, int n, int identity_start, int artificial_start, int artificial_end
 ) {
 
 	std::vector<int> B_ids(m);
 	for (int i = 0; i < m; ++i)
 	  B_ids[i] = identity_start + i;
-
-	std::vector<double> cost_phase_one(artificial_end);
-	for (int i = 0; i < artificial_end; ++i)
-		cost_phase_one[i] = i < artificial_start ? 0.0 : -1.0;
 
 	DeviceResources gpu(m, artificial_end);
 	cuda_memcpy(gpu.A, A.data(), m * artificial_end, cudaMemcpyHostToDevice);
@@ -272,7 +269,7 @@ std::pair<double, SolveStatus> solve(
 	
 	auto [sum_artificials, status_phase_one] = core(gpu, m, artificial_end, block_dim, grid_dim_1D, grid_dim);
 	if (status_phase_one != SolveStatus::OptimumFound || fabs(sum_artificials) > OPTIMALITY_TOL) {
-		std::cerr << "!! Phase I failed, the optimum is " << sum_artificials << '\n';
+		std::cerr << "Phase I reached " << MAX_ITERS << " iterations, the optimum is " << sum_artificials << '\n';
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -319,9 +316,9 @@ std::pair<double, SolveStatus> solve(
 
 int main() {
 	int m, n, n_surplus, n_slack;
-	double offset;
+	double offset, _;
 
-	std::cin >> m >> n >> n_surplus >> n_slack >> offset;
+	std::cin >> m >> n >> n_surplus >> n_slack >> offset >> _;
 
 	int identity_start = n + n_surplus;
 	int artificial_start = identity_start + n_slack;
@@ -329,6 +326,7 @@ int main() {
 	
 	Eigen::MatrixXd A(m, artificial_end);
 	Eigen::VectorXd b(m), c(artificial_start);
+	std::vector<double> cost_phase_one(artificial_end, 0.0);
 
 	for (int i = 0; i < m; ++i)
 		for (int j = 0; j < artificial_end; ++j)
@@ -336,11 +334,12 @@ int main() {
 
 	for (int i = 0; i < m; ++i)
 		std::cin >> b(i);
-
 	for (int i = 0; i < artificial_start; ++i)
 		std::cin >> c(i);
+	for (int i = artificial_start; i < artificial_end; ++i)
+		std::cin >> cost_phase_one[i];
 
-	auto [z, status] = solve(A, b, c, m, n, identity_start, artificial_start, artificial_end);
+	auto [z, status] = solve(A, b, c, cost_phase_one, m, n, identity_start, artificial_start, artificial_end);
 
 	switch (status) {
 		case SolveStatus::OptimumFound:

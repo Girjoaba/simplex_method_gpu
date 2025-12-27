@@ -461,12 +461,11 @@ int main() {
     print_gpu_info();
 
     int m, n, n_surplus, n_slack;
-    double offset;
+    double offset, M;
     // starts with m, n
-    std::cin >> m >> n >> n_surplus >> n_slack >> offset;
+    std::cin >> m >> n >> n_surplus >> n_slack >> offset >> M;
 
     int identity_start = n + n_surplus;
-	int artificial_start = identity_start + n_slack;
 	int artificial_end = identity_start + m;
     
     Eigen::MatrixXd A(m, artificial_end);
@@ -483,14 +482,11 @@ int main() {
         std::cin >> b(i);
     }
     // then c
-    for (int i = 0; i < artificial_start; i++) {
+    for (int i = 0; i < artificial_end; i++) {
         std::cin >> c(i);
     }
 
-    double M = std::max(1e9, c.head(artificial_start).cwiseAbs().maxCoeff() * 1e6);
-    c.tail(m - n_slack).setConstant(-M);
-
-    equilibrate(A, b, c);
+    c.tail(m - n_slack) *= M;
     
     Eigen::VectorXd z = simplex_method(A, b, c, artificial_end, m);
     double optimum = c.dot(z);  // Compute c^T * z

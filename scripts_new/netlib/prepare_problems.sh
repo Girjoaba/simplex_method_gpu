@@ -41,11 +41,11 @@ for UPPER_CASE_PROBLEM in "${problems[@]}"; do
 	fi
 
 	if [ ! -f "$mps_file" ]; then
-  	"$expander_bin" < "$compressed_file" > "$mps_file"
+		"$expander_bin" < "$compressed_file" > "$mps_file"
 	fi
 
 	if [ ! -f "${preprocessed_file}" ]; then
-  	./src/gurobi/interface.py "$mps_file" "$preprocessed_file"
+		./src/gurobi/interface.py "$mps_file" "$preprocessed_file"
 	fi
 	
 done

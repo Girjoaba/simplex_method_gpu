@@ -6,7 +6,8 @@ NVCC        := nvcc
 CXX         := g++
 CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O3
 CPP_FLAGS	  := -march=native -ffp-contract=fast
-CUDA_FLAGS  := -arch=$(ARCH) -lcusolver -lcudart -lcublas -lcusparse --expt-relaxed-constexpr
+CUDA_FLAGS  := -arch=$(ARCH) -lcusolver -lcudart -lcublas -lcusparse 
+EIGEN_FLAGS	:= --expt-relaxed-constexpr -Xcudafe --diag_suppress=20012
 # LIBS        := -lcublas
 
 # Paths
@@ -70,7 +71,7 @@ $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 # This maps 'bin_solver/NAME.out' directly to 'src/cuda_slow/NAME.cu'
 $(BIN_SOLVER_DIR)/bm_%.out: $(SRC_BIG_M_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
-	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $< -o $@ $(LIBS)
+	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
 
 # === CPU Solver (Eigen-based, no CUDA) ===
 $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
@@ -80,7 +81,7 @@ $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
 # === two-phase-method ===
 $(BIN_SOLVER_DIR)/tp_%.out: $(SRC_TWO_PHASE_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
-	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $< -o $@
+	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
 
 # === Run Rules ===
 # Allows running specific versions like: make run-v1_cpu

@@ -108,6 +108,7 @@ n = A.shape[1]
 # =================== Step 4 ===================
 
 # flip negative constraints
+# compute the big M
 
 flip = b < 0
 A[flip] *= -1.0
@@ -116,6 +117,8 @@ ge = (senses == '>')
 le = (senses == '<')
 senses[flip & ge] = '<'
 senses[flip & le] = '>'
+
+M = max(1e9, 1e6 * np.max(np.abs(c)))
 
 # =================== Step 5 ===================
 
@@ -138,16 +141,30 @@ c = np.concatenate((c, np.zeros(n_surplus, dtype=c.dtype)))
 
 A = np.hstack((A, np.identity(m, dtype=A.dtype)))
 c = np.concatenate((c, np.zeros(n_slack, dtype=c.dtype)))
+c = np.concatenate((c, -np.ones(m - n_slack, dtype=c.dtype)))
 
 assert A.shape == (m, n + n_surplus + m)
 assert b.shape == (m,)
-assert c.shape == (n + n_surplus + n_slack,)
+assert c.shape == A.shape
 
 # =================== Step 6 ===================
 
+# equilibrate the system
+
+row_maxes = np.max(np.abs(A), axis=1)
+row_scales = np.maximum(row_maxes, np.abs(b))
+A = A / row_scales[:, np.newaxis]
+b = b / row_scales
+
+col_scales = np.max(np.abs(A), axis=0)
+A = A / col_scales
+c = c / col_scales
+
+# =================== Step 7 ===================
+
 with open(output_file, "w") as f:
     f.write(f"{m} {n} {n_surplus} {n_slack}\n")
-    f.write(f"{repr(offset)}\n")
+    f.write(f"{repr(offset)} {repr(M)}\n")
     for i in range(m):
         f.write(" ".join(repr(float(x)) for x in A[i, :]) + '\n')
     f.write(" ".join(repr(float(x)) for x in b) + '\n')

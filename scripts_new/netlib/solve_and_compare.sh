@@ -26,6 +26,7 @@ fi
 correct=0
 wrong=0
 errors=0
+missing=0
 total_time=0
 
 while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
@@ -38,8 +39,10 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 	fi
 
 	if [ ! -f "$preprocessed_file" ]; then
-		echo "File not found: $preprocessed_file" >&2
-		exit 1
+		printf "[missing] %-25s %-4s %s %-60s\n" \
+			"$problem" "MISS" "🗂" "(${preprocessed_file} not found)" >&2
+		missing=$((missing + 1))
+		continue
 	fi
 
 	tmp_stdout=$(mktemp --suffix=.stdout.tmp)
@@ -49,9 +52,12 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 	exit_code=0
 	{ time -p "$solver_bin" < "$preprocessed_file" > "$tmp_stdout" 2>> "$tmp_stderr" ; } 2>> "$tmp_time" || exit_code=$?
 
+	real_time=$(grep "real" "$tmp_time" | awk '{print $2}')
+
 	if [ "$exit_code" -ne 0 ] ; then
-		printf "[error]   %-25s\tERR 🔴\n" "$problem"
-		cat "$tmp_stderr"
+		printf "[error]   %-25s %-4s %s %-60s Time: %ss\n" \
+			"$problem" "ERR" "❌" "(solver exited with an error)" "$real_time" >&2
+		cat "$tmp_stderr" >&2
 		rm -rf "$tmp_stdout" "$tmp_stderr" "$tmp_time"
 		errors=$((errors + 1))
 		continue
@@ -60,7 +66,8 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 	optimum_line=$(grep '^Optimum found:' "$tmp_stdout" || true)
 
 	if [ -z "$optimum_line" ]; then
-		echo "[compare] ❌ $problem: experiment missing 'Optimum found:' -> WRONG"
+		printf "[compare] %-25s %-4s %s %-60s Time: %ss\n" \
+			"$problem" "WARN" "⚠️" "(experiment missing 'Optimum found:')" "$real_time"
 		cat "$tmp_stdout"
 		rm -rf "$tmp_stdout" "$tmp_stderr" "$tmp_time"
 		wrong=$((wrong + 1))
@@ -70,23 +77,24 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 	exp_val=$(echo "${optimum_line##* }" | sed 's/^-//; t; s/^/-/')
 
 	if awk -v a="$exp_val" -v b="$gt_val" 'BEGIN {
-			diff = (a > b) ? a - b : b - a
-			abs_b = (b > 0) ? b : -b
-			exit !(diff <= 1e-4 * ((abs_b > 1) ? abs_b : 1))
+	if (tolower(a) ~ /nan/) { exit 1 }
+	diff = (a > b) ? a - b : b - a
+		abs_b = (b > 0) ? b : -b
+		exit !(diff <= 1e-4 * ((abs_b > 1) ? abs_b : 1))
 	}'; then
-		status_msg="OK  ✅"
+		status_msg="OK"
+		emoji="✅"
 		correct=$((correct + 1))
+		total_time=$(awk "BEGIN {print $total_time + $real_time}")
 	else
-		status_msg="KO  ❌"
+		status_msg="WARN"
+		emoji="⚠️"
 		wrong=$((wrong + 1))
 	fi
 
-	real_time=$(grep "real" "$tmp_time" | awk '{print $2}')
-	total_time=$(echo "$total_time + $real_time" | bc)
-
 	detail_msg="(got=$exp_val, expected=$gt_val)"
-	printf "[compare] %-25s\t%-10s\t%-60s\tTime: %ss\n" \
-		"$problem" "$status_msg" "$detail_msg" "$real_time"
+	printf "[compare] %-25s %-4s %s %-60s Time: %ss\n" \
+		"$problem" "$status_msg" "$emoji" "$detail_msg" "$real_time"
 
 	rm -rf "$tmp_stdout" "$tmp_stderr" "$tmp_time"
 
@@ -94,7 +102,8 @@ done < <(tail -n +2 "$problem_summary" | awk -F',' -v max="$2" '$4 < max')
 
 echo "===================================="
 echo "Correct ✅                : $correct"
-echo "Wrong   ❌                : $wrong"
-echo "Errors  🔴                : $errors"
+echo "Wrong   ⚠️                : $wrong"
+echo "Errors  ❌                : $errors"
+echo "Missing 🗂                : $missing"
 echo "Time    ⏰                : ${total_time}s"
 echo "===================================="

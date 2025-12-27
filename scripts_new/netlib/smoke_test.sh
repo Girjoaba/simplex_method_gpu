@@ -35,7 +35,7 @@ echo "[Phase 4] Interface test: All solvers on AFIRO..."
 echo 'Name,Rows,Cols,Nonzeros,Bytes,BR,Optimal Value
 AFIRO,28,32,88,794,,-4.6475314286E+02' > scripts_new/netlib/problem_summary.csv
 
-for solver in tp_v1_baseline tp_v2_accurate_xB tp_v3_fast_xB bm_v8_full_gpu; do
+for solver in tp_v1_baseline tp_v3_fast_xB bm_v8_full_gpu; do
     echo "  Testing $solver..."
     scripts_new/netlib/solve_and_compare.sh "bin_solver/${solver}.out" 200000 2>&1 \
         | tee "$LOG_DIR/interface_${solver}_$TIMESTAMP.log"

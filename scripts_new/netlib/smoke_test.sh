@@ -41,16 +41,16 @@ for solver in tp_v1_baseline tp_v3_fast_xB bm_v5_thrust_max_elem bm_v8_full_gpu 
         | tee "$LOG_DIR/interface_${solver}_$TIMESTAMP.log"
 done
 
-# --- Phase 5: Problem test (1 solver, all 69 problems) ---
-echo "[Phase 5] Problem test: tp_v3 on all 69 problems..."
-cp scripts_new/netlib/problem_summary_backup.csv scripts_new/netlib/problem_summary.csv
+# # --- Phase 5: Problem test (1 solver, all 69 problems) ---
+# echo "[Phase 5] Problem test: tp_v3 on all 69 problems..."
+# cp scripts_new/netlib/problem_summary_backup.csv scripts_new/netlib/problem_summary.csv
+#
+# scripts_new/netlib/solve_and_compare.sh bin_solver/tp_v3_fast_xB.out 200000 2>&1 \
+#     | tee "$LOG_DIR/problems_tp_v3_$TIMESTAMP.log"
+#
+# # --- Cleanup ---
+# echo "[Cleanup] Restoring original problem_summary.csv..."
+# cp scripts_new/netlib/problem_summary.csv.bak scripts_new/netlib/problem_summary.csv
 
-scripts_new/netlib/solve_and_compare.sh bin_solver/tp_v3_fast_xB.out 200000 2>&1 \
-    | tee "$LOG_DIR/problems_tp_v3_$TIMESTAMP.log"
-
-# --- Cleanup ---
-echo "[Cleanup] Restoring original problem_summary.csv..."
-cp scripts_new/netlib/problem_summary.csv.bak scripts_new/netlib/problem_summary.csv
-
-echo "=== SMOKE TEST COMPLETE ===" | tee -a "$LOG_DIR/summary_$TIMESTAMP.log"
+echo "=== INTERFACE TEST COMPLETE ===" | tee -a "$LOG_DIR/summary_$TIMESTAMP.log"
 echo "Logs saved to: $LOG_DIR/"

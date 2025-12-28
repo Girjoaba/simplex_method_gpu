@@ -367,33 +367,22 @@ Eigen::VectorXd simplex_method(const Eigen::MatrixXd& A,
 int main() {
     print_gpu_info();
 
-    int n, m;
-    // starts with n, m
-    std::cin >> m >> n;
-    
-    Eigen::MatrixXd A(m, n);
-    Eigen::VectorXd b(m), c(n);
+    int m, n, n_surplus, n_slack;
+    double offset, M;
+    std::cin >> m >> n >> n_surplus >> n_slack >> offset >> M;
 
-    // followed by A
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            std::cin >> A(i, j);
-        }
-    }
-    // then, b
-    for (int i = 0; i < m; i++) {
-        std::cin >> b(i);
-    }
-    // then c
-    for (int i = 0; i < n; i++) {
-        std::cin >> c(i);
-    }
-    equilibrate(A, b, c);
-    
-    
-    Eigen::VectorXd z = simplex_method(A, b, c, n, m);
-    double optimum = c.dot(z);  // Compute c^T * z
-    // std::cout << "Output:\n" << z.transpose() << "\n";
-    std::cout << std::setprecision(15) << "Optimum found: " << optimum << "\n";
+	int last_col = n + n_surplus + m;
+    Eigen::MatrixXd A(m, last_col);
+    Eigen::VectorXd b(m), c(last_col);
 
+    for (int i = 0; i < m; i++) for (int j = 0; j < last_col; j++) std::cin >> A(i, j);
+    for (int i = 0; i < m; i++) std::cin >> b(i);
+    for (int i = 0; i < last_col; i++) std::cin >> c(i);
+
+    c.tail(m - n_slack) *= M;
+
+    Eigen::VectorXd z = simplex_method(A, b, c, last_col, m);
+    double optimum = c.dot(z);
+    std::cout << std::scientific << std::uppercase << std::setprecision(10)
+              << "Optimum found: " << (optimum + offset) << "\n";
 }

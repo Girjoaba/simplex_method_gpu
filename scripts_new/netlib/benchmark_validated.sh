@@ -8,8 +8,9 @@
 #
 # Total runs per problem = 1 (validation) + extra_runs
 #
-# Usage: ./benchmark_validated.sh [max_nonzeros] [extra_runs] [timeout_sec]
-# Example: ./benchmark_validated.sh 10000000 4 3600  # gives 5 total runs
+# Usage: ./benchmark_validated.sh [max_nonzeros] [extra_runs] [timeout_sec] [force]
+# Example: ./benchmark_validated.sh 10000000 4 3600        # skip existing (default)
+# Example: ./benchmark_validated.sh 10000000 4 3600 force  # re-run all
 
 # Don't use set -e so we can handle errors gracefully
 set -uo pipefail
@@ -17,6 +18,7 @@ set -uo pipefail
 MAX_NONZEROS="${1:-10000000}"
 EXTRA_RUNS="${2:-4}"
 TIMEOUT_SEC="${3:-3600}"
+FORCE_RERUN="${4:-}"  # Set to "force" to re-run existing benchmarks
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -234,6 +236,15 @@ for solver_name in "${SOLVERS[@]}"; do
         problem_idx=$((problem_idx + 1))
         problem="${PROBLEM,,}"  # lowercase
         problem_file="${PREPROCESSED_DIR}/${problem}.preprocessed"
+        output_tsv="${solver_results_dir}/${problem}.tsv"
+
+        # Skip if already benchmarked (unless force flag is set)
+        if [ -f "$output_tsv" ] && [ "$FORCE_RERUN" != "force" ]; then
+            echo "  [$problem_idx/$total_problems] $problem... SKIP (already benchmarked)"
+            # Count as correct since it was previously successful
+            solver_correct[$solver_name]=$((solver_correct[$solver_name] + 1))
+            continue
+        fi
 
         # Check if preprocessed file exists
         if [ ! -f "$problem_file" ]; then
@@ -259,7 +270,7 @@ for solver_name in "${SOLVERS[@]}"; do
 
             # Step 2: Run benchmark (includes validation run as run_id=0)
             run_benchmark "$solver_bin" "$problem_file" \
-                "${solver_results_dir}/${problem}.tsv" \
+                "$output_tsv" \
                 "$EXTRA_RUNS" "$solver_name" "$problem" "$rows" "$cols" \
                 "$val_time" "$val_optimum" "$val_iterations"
 

@@ -2,12 +2,14 @@
 # benchmark_validated.sh - Benchmark solvers with validation
 #
 # For each solver, for each problem:
-#   1. Run validation (1x)
-#   2. If correct: run 4 more times, record to TSV
+#   1. Run validation (1x) - if correct, save as run_id=0
+#   2. If correct: run N more times (run_id=1..N), all recorded to TSV
 #   3. If failed: log to failures.txt, continue to next
 #
+# Total runs per problem = 1 (validation) + extra_runs
+#
 # Usage: ./benchmark_validated.sh [max_nonzeros] [extra_runs] [timeout_sec]
-# Example: ./benchmark_validated.sh 10000000 4 3600
+# Example: ./benchmark_validated.sh 10000000 4 3600  # gives 5 total runs
 
 # Don't use set -e so we can handle errors gracefully
 set -uo pipefail
@@ -43,7 +45,8 @@ declare -A solver_failed
 
 # ------------------------------------------------------------------------------
 # Validation function
-# Returns: "correct" or an error description
+# Returns: "correct|time|optimum|iterations" or an error description
+# The data after | is only present if validation passed
 # ------------------------------------------------------------------------------
 validate_single_run() {
     local solver_bin="$1"
@@ -91,6 +94,9 @@ validate_single_run() {
     # Parse value (note sign handling from existing script)
     local got_val=$(echo "${optimum_line##* }" | sed 's/^-//; t; s/^/-/')
 
+    # Parse iterations if available
+    local iterations=$(grep -m1 '^Iteration' "$tmp_stdout" | awk '{print $2}' | tr -d ':' || true)
+
     # Check for NaN
     if echo "$got_val" | grep -qi "nan"; then
         rm -f "$tmp_stdout" "$tmp_stderr"
@@ -106,7 +112,8 @@ validate_single_run() {
         exit !(diff <= 1e-4 * ((abs_b > 1) ? abs_b : 1))
     }'; then
         rm -f "$tmp_stdout" "$tmp_stderr"
-        echo "correct"
+        # Return result with data: correct|time|optimum|iterations
+        echo "correct|${real_time}|${got_val}|${iterations}"
     else
         rm -f "$tmp_stdout" "$tmp_stderr"
         echo "wrong_value:got=${got_val}_expected=${expected_val}"
@@ -115,21 +122,31 @@ validate_single_run() {
 
 # ------------------------------------------------------------------------------
 # Benchmark function - runs N times and records to TSV
+# First writes validation run data (run_id=0), then runs additional benchmarks
 # ------------------------------------------------------------------------------
 run_benchmark() {
     local solver_bin="$1"
     local problem_file="$2"
     local output_tsv="$3"
-    local num_runs="$4"
+    local num_extra_runs="$4"
     local solver_name="$5"
     local problem_name="$6"
     local m="$7"
     local n="$8"
+    local validation_time="$9"
+    local validation_optimum="${10}"
+    local validation_iterations="${11}"
 
     # Write header
     echo -e "solver\tproblem\tm\tn\toptimum\titerations\ttime_sec\trun_id" > "$output_tsv"
 
-    for ((run_id=0; run_id<num_runs; run_id++)); do
+    # Write validation run as run_id=0
+    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\n" \
+        "$solver_name" "$problem_name" "$m" "$n" \
+        "$validation_optimum" "$validation_iterations" "$validation_time" 0 >> "$output_tsv"
+
+    # Run additional benchmarks (run_id=1 through num_extra_runs)
+    for ((run_id=1; run_id<=num_extra_runs; run_id++)); do
         local tmp_stdout=$(mktemp)
 
         # Time the execution (no timeout here since validation passed)
@@ -231,13 +248,20 @@ for solver_name in "${SOLVERS[@]}"; do
 
         result=$(validate_single_run "$solver_bin" "$problem_file" "$gt_val")
 
-        if [ "$result" == "correct" ]; then
-            echo "OK, benchmarking ${EXTRA_RUNS}x..."
+        # Parse result - format is "correct|time|optimum|iterations" or error string
+        result_status="${result%%|*}"
 
-            # Step 2: Run benchmark
+        if [ "$result_status" == "correct" ]; then
+            # Parse validation data: correct|time|optimum|iterations
+            IFS='|' read -r _ val_time val_optimum val_iterations <<< "$result"
+
+            echo "OK, benchmarking ${EXTRA_RUNS}x more..."
+
+            # Step 2: Run benchmark (includes validation run as run_id=0)
             run_benchmark "$solver_bin" "$problem_file" \
                 "${solver_results_dir}/${problem}.tsv" \
-                "$EXTRA_RUNS" "$solver_name" "$problem" "$rows" "$cols"
+                "$EXTRA_RUNS" "$solver_name" "$problem" "$rows" "$cols" \
+                "$val_time" "$val_optimum" "$val_iterations"
 
             solver_correct[$solver_name]=$((solver_correct[$solver_name] + 1))
         else

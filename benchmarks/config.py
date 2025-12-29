@@ -82,6 +82,39 @@ PROBLEMS = {
         "expected_optimum": -15394362.183631929,
         "description": "whatever",
     },
+    # New large problems (larger than stocfor2)
+    "netlib_bnl2": {
+        "m": 2325,
+        "n": 3489,
+        "size": 8111925,
+        "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_bnl2",
+        "expected_optimum": -1811.2365404,
+        "description": "Large NETLIB problem",
+    },
+    "netlib_pilot87": {
+        "m": 2031,
+        "n": 4883,
+        "size": 9917373,
+        "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_pilot87",
+        "expected_optimum": -301.71072827,
+        "description": "Large NETLIB problem",
+    },
+    "netlib_80bau3b": {
+        "m": 2263,
+        "n": 9799,
+        "size": 22175137,
+        "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_80bau3b",
+        "expected_optimum": -987232.16072,
+        "description": "Large NETLIB problem",
+    },
+    "netlib_maros-r7": {
+        "m": 3137,
+        "n": 9408,
+        "size": 29513296,
+        "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_maros-r7",
+        "expected_optimum": -1497185.1665,
+        "description": "Large NETLIB problem",
+    },
     "netlib_ship12s": {
         "m": 3919,
         "n": 1151,
@@ -136,6 +169,22 @@ PROBLEMS = {
         "size": 288000,
         "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_sctap1",
         "expected_optimum": -1412.25,
+        "description": "whatever",
+    },
+    "netlib_sctap2": {
+        "m": 1091,
+        "n": 1880,
+        "size": 2051080,
+        "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_sctap2",
+        "expected_optimum": 1724.8071429,
+        "description": "whatever",
+    },
+    "netlib_sctap3": {
+        "m": 1481,
+        "n": 2480,
+        "size": 3672880,
+        "file": os.path.join(PROJECT_ROOT, "benchmarks/input/") + "netlib_sctap3",
+        "expected_optimum": 1424.0,
         "description": "whatever",
     },
     "netlib_scsd8": {
@@ -670,6 +719,23 @@ SUITES = {
         "warmup_problem": None,
         "hardware": "NVIDIA GeForce RTX 3060",
     },
+    "all_12_6solvers": {
+        "description": "14 problems - all 7 solvers (validated benchmark data)",
+        "problems": [
+            # Top 6 largest (by m×n) with full solver coverage
+            "netlib_stocfor2", "netlib_sctap3", "netlib_czprob", "netlib_ship12s",
+            "netlib_sierra", "netlib_ganges",
+            # Additional large problems
+            "netlib_grow22", "netlib_fit1p", "netlib_ship08s",
+            # Medium 5
+            "netlib_scsd8", "netlib_scfxm2", "netlib_ship04l", "netlib_standmps", "netlib_scrs8",
+        ],
+        "solvers": ["bm_v5", "bm_v8", "bm_v10", "bm_v11", "tp_v1", "tp_v3", "gurobi"],
+        "repetitions": 4,
+        "warmup_iterations": 0,
+        "warmup_problem": None,
+        "hardware": "NVIDIA GeForce RTX 3060",
+    },
     "next_5_large": {
         "description": "Next 5 largest problems without results",
         "problems": ["netlib_czprob", "netlib_ship12s", "netlib_grow22", "netlib_fit1p", "netlib_ship08s"],
@@ -728,6 +794,7 @@ SOLVER_COLORS = {
     "bm_v11": "#2A9D8F",  # Teal (sparse)
     # Two-Phase solvers
     "tp_v1": "#264653",   # Dark blue
+    "tp_v3": "#457B9D",   # Steel blue (fast xB variant)
     # cuda_slow solvers (legacy)
     "cuda_slow_v1_cpu": "#E63946",  # Red
     "cuda_slow_v1_lu": "#F4A261",  # Orange

@@ -102,6 +102,40 @@ void cuda_memcpy_impl(T* dst, const T* src, int size, cudaMemcpyKind kind, const
 	}
 }
 
+/* ===================== LP PROBLEM ===================== */
+
+struct LP_problem {
+	int m, n, nnz;
+	
+	int identity_start;
+	int artificial_start;
+	int artificial_end;
+	
+	std::vector<double>	values;
+	std::vector<int>    indices;
+	std::vector<int>    starts;
+
+	std::vector<double> b;
+	std::vector<double> c;
+
+	LP_problem(
+		int m, int n, int nnz,
+		int identity_start,
+		int artificial_start,
+		int artificial_end
+	) :
+		m(m), n(n), nnz(nnz),
+		identity_start(identity_start),
+		artificial_start(artificial_start),
+		artificial_end(artificial_end),
+		values(nnz),
+		indices(nnz),
+		starts(artificial_end + 1),
+		b(m),
+		c(artificial_start)
+	{}
+};
+
 /* ===================== COMPRESSED SPARSE FORMAT ===================== */
 
 // Supports both CSC and CSR, distinguished via the is_csr flag
@@ -183,52 +217,6 @@ struct CS_basis : CS {
 		cudaFree(thread_to_column_map);
 	}
 };
-
-/* ===================== KERNELS ===================== */
-
-__global__ void mask_basis(double* vec, const int* B_ids, double val, int m) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < m)
-		vec[B_ids[i]] = val;
-}
-
-__global__ void update_xB(double* __restrict__ xB, const double* d, int leave, double theta_min, int m) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < m)
-		xB[i] = (i != leave) ? (xB[i] - theta_min * d[i]) : theta_min;
-}
-
-__global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < m)
-		cB[i] = c[B_ids[i]];
-}
-
-// Computes non-zero counts per column
-__global__ void compute_B_column_nnz(int m, int *B_ids, int *B_column_nnz, int *A_starts) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < m)
-		B_column_nnz[i] = A_starts[B_ids[i] + 1] - A_starts[B_ids[i]];
-}
-
-// Gathers B from A_csc using B_ids and thread_to_column_map
-__global__ void extract_B(
-    double* A_values, int* A_indices, int* A_starts,
-    double* B_values, int* B_indices, int* B_starts,
-    int* B_ids, int* thread_to_column_map, int nnz
-) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < nnz) {
-		// -1 since thrust::upper_bound returns the index of the next column
-		int col_in_B = thread_to_column_map[i] - 1; 
-		int col_in_A = B_ids[col_in_B];
-		int col_offset = i - B_starts[col_in_B];
-		int src_idx = A_starts[col_in_A] + col_offset;
-
-		B_values[i] = A_values[src_idx];
-		B_indices[i] = A_indices[src_idx];
-	}
-}
 
 /* ===================== DEVICE RESOURCES ===================== */
 
@@ -328,7 +316,7 @@ struct DeviceResources {
 	void assemble_basis() {
 
 		// Compute number of non-zeros per column of B
-		compute_B_column_nnz<<<block_dim_1d, grid_dim_1D>>>(m, B_ids, B_csc.column_nnz, A_csc.starts);
+		compute_B_column_nnz<<<grid_dim_1D, block_dim_1d>>>(m, B_ids, B_csc.column_nnz, A_csc.starts);
 
 		// Compute column starts (prefix sum)
 		thrust::exclusive_scan(
@@ -354,7 +342,7 @@ struct DeviceResources {
 		);
 
 		// Gather values and row indices from A into B
-		extract_B<<<block_dim_1d, div_up(nnz, block_dim_1d)>>>(
+		extract_B<<<div_up(nnz, block_dim_1d), block_dim_1d>>>(
 			A_csc.values, A_csc.indices, A_csc.starts,
 			B_csc.values, B_csc.indices, B_csc.starts,
 			B_ids, B_csc.thread_to_column_map, nnz
@@ -371,144 +359,7 @@ struct DeviceResources {
 	}
 };
 
-/* ===================== THRUST ===================== */
-
-struct RatioTestUnaryOp {
-	const double *xB, *d;
-
-	__device__ thrust::pair<double, int> operator()(int i) const {
-		double d_i = d[i];
-		return d_i > pivot_tol ? thrust::make_pair(xB[i] / d_i, i) : thrust::make_pair(DBL_MAX, -1);
-	}
-};
-
-// Reduction operator to find the minimum (value, index) pair
-struct MinPairOp {
-	__device__ thrust::pair<double, int> operator() (
-		const thrust::pair<double, int>& a,
-		const thrust::pair<double, int>& b
-	) const {
-		if (a.first < b.first) return a;
-		if (a.first > b.first) return b;
-		return (a.second < b.second) ? a : b;
-	}
-};
-
-struct IsNonZero {
-	__device__ bool operator()(double v) const {
-		return fabs(v) > row_tol;
-	}
-};
-
-/* ===================== CORE LOGIC ===================== */
-
-std::pair<double, SolveStatus> core(
-	DeviceResources& dev, int m, int n
-) {
-
-	auto status = SolveStatus::MaxIter;
-	int iteration;
-
-	for (iteration = 1; iteration <= max_iterations; ++iteration) {
-		// solve for y: B^T * y^T = cB^T
-		gather_cost<<<block_dim_1d, dev.grid_dim_1D>>>(dev.y, dev.c, dev.B_ids, m);
-		// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_T, m, 1, dev.B, m, dev.ipiv, dev.y, m, dev.info));
-
-		// compute rc^T = -A^T * y^T + c^T
-		cuda_memcpy(dev.rc, dev.c, n, cudaMemcpyDeviceToDevice);
-		// cublasCheckError(cublasDgemv(dev.handle_cublas, CUBLAS_OP_T, m, n, &neg_one, dev.A, m, dev.y, 1, &one, dev.rc, 1));
-
-		// select entering variable
-		mask_basis<<<block_dim_1d, dev.grid_dim_1D>>>(dev.rc, dev.B_ids, -1.0, m);
-		thrust::device_ptr<double> thrust_rc(dev.rc);
-		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
-		int enter = iterator - thrust_rc;
-		
-		if (*iterator <= optimality_tol) {
-			status = SolveStatus::OptimumFound;
-			break;
-		}
-		
-		// solve for d: B * d = A_enter
-		// cuda_memcpy(dev.d, dev.A + (enter * m), m, cudaMemcpyDeviceToDevice);
-		// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.d, m, dev.info));
-		
-		// ratio test
-		auto [theta_min, leave] = thrust::transform_reduce(
-			thrust::device,
-			thrust::make_counting_iterator(0),
-			thrust::make_counting_iterator(m),
-			RatioTestUnaryOp{dev.xB, dev.d},
-			thrust::make_pair(DBL_MAX, -1),
-			MinPairOp()
-		);
-		
-		if (leave == -1 || theta_min >= DBL_MAX) {
-			status = SolveStatus::Unbounded;
-			break;
-		}
-
-		// update B_ids, factorise B
-		cuda_memcpy(dev.B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
-		dev.assemble_basis();
-		// cusolverCheckError(cusolverDnDgetrf(dev.handle, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
-
-		// update xB
-		if (iteration % xB_update_interval) {
-			update_xB<<<block_dim_1d, dev.grid_dim_1D>>>(dev.xB, dev.d, leave, theta_min, m);
-		} else {
-			cuda_memcpy(dev.xB, dev.b, m, cudaMemcpyDeviceToDevice);
-			// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.xB, m, dev.info));
-		}
-	}
-	std::cout << "Iterations: " << std::min(iteration, max_iterations) << '\n';
-
-	double z;
-	if (status != SolveStatus::Unbounded) {
-		gather_cost<<<block_dim_1d, dev.grid_dim_1D>>>(dev.y, dev.c, dev.B_ids, m);
-		cublasDdot(dev.handle_cublas, m, dev.y, 1, dev.xB, 1, &z);
-	}
-
-	return std::make_pair(z, status);
-}
-
-/* ===================== LP PROBLEM ===================== */
-
-struct LP_problem {
-	int m, n, nnz;
-	
-	int identity_start;
-	int artificial_start;
-	int artificial_end;
-	
-	std::vector<double>	values;
-	std::vector<int>    indices;
-	std::vector<int>    starts;
-
-	std::vector<double> b;
-	std::vector<double> c;
-
-	LP_problem(
-		int m, int n, int nnz,
-		int identity_start,
-		int artificial_start,
-		int artificial_end
-	) :
-		m(m), n(n), nnz(nnz),
-		identity_start(identity_start),
-		artificial_start(artificial_start),
-		artificial_end(artificial_end)
-	{
-		values.resize(nnz);
-		indices.resize(nnz);
-		starts.resize(artificial_end + 1);
-
-		b.resize(m);
-		c.resize(artificial_start);
-	}
-};
-
-DeviceResources get_device_resources(LP_problem lp_problem) {
+DeviceResources get_device_resources(LP_problem& lp_problem) {
 
 	int m = lp_problem.m;
 	int id_start  = lp_problem.identity_start;
@@ -542,7 +393,174 @@ DeviceResources get_device_resources(LP_problem lp_problem) {
 	return dev;
 }
 
-void transition(DeviceResources& dev, LP_problem lp_problem) {
+/* ===================== THRUST ===================== */
+
+struct RatioTestUnaryOp {
+	const double *xB, *d;
+
+	__device__ thrust::pair<double, int> operator()(int i) const {
+		double d_i = d[i];
+		return d_i > pivot_tol ? thrust::make_pair(xB[i] / d_i, i) : thrust::make_pair(DBL_MAX, -1);
+	}
+};
+
+// Reduction operator to find the minimum (value, index) pair
+struct MinPairOp {
+	__device__ thrust::pair<double, int> operator() (
+		const thrust::pair<double, int>& a,
+		const thrust::pair<double, int>& b
+	) const {
+		if (a.first < b.first) return a;
+		if (a.first > b.first) return b;
+		return (a.second < b.second) ? a : b;
+	}
+};
+
+struct IsNonZero {
+	__device__ bool operator()(double v) const {
+		return fabs(v) > row_tol;
+	}
+};
+
+/* ===================== KERNELS ===================== */
+
+__global__ void mask_basis(double* vec, const int* B_ids, double val, int m) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < m)
+		vec[B_ids[i]] = val;
+}
+
+__global__ void update_xB(double* __restrict__ xB, const double* d, int leave, double theta_min, int m) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < m)
+		xB[i] = (i != leave) ? (xB[i] - theta_min * d[i]) : theta_min;
+}
+
+__global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < m)
+		cB[i] = c[B_ids[i]];
+}
+
+// Computes non-zero counts per column
+__global__ void compute_B_column_nnz(int m, int *B_ids, int *B_column_nnz, int *A_starts) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < m)
+		B_column_nnz[i] = A_starts[B_ids[i] + 1] - A_starts[B_ids[i]];
+}
+
+// Gathers B from A_csc using B_ids and thread_to_column_map
+__global__ void extract_B(
+    double* A_values, int* A_indices, int* A_starts,
+    double* B_values, int* B_indices, int* B_starts,
+    int* B_ids, int* thread_to_column_map, int nnz
+) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < nnz) {
+		// -1 since thrust::upper_bound returns the index of the next column
+		int col_in_B = thread_to_column_map[i] - 1; 
+		int col_in_A = B_ids[col_in_B];
+		int col_offset = i - B_starts[col_in_B];
+		int src_idx = A_starts[col_in_A] + col_offset;
+
+		B_values[i] = A_values[src_idx];
+		B_indices[i] = A_indices[src_idx];
+	}
+}
+
+// Scatters sparse A_p into dense (d)irection
+__global__ void scatter_column(double* d, double* A_values, int* A_indices, int A_starts_enter, int col_nnz) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < col_nnz) {
+		int row = A_indices[A_starts_enter + i];
+		d[row] = A_values[A_starts_enter + i];
+	}
+}
+
+/* ===================== CORE SIMPLEX LOGIC ===================== */
+
+std::pair<double, SolveStatus> core(
+	int m, int n,
+	DeviceResources& dev,
+	LP_problem& lp_problem
+) {
+
+	auto status = SolveStatus::MaxIter;
+	int iteration;
+
+	for (iteration = 1; iteration <= max_iterations; ++iteration) {
+		// Solve for y: B^T * y^T = cB^T
+		gather_cost<<<dev.grid_dim_1D, block_dim_1d>>>(dev.y, dev.c, dev.B_ids, m);
+		// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_T, m, 1, dev.B, m, dev.ipiv, dev.y, m, dev.info));
+
+		// Compute rc^T = -A^T * y^T + c^T
+		cuda_memcpy(dev.rc, dev.c, n, cudaMemcpyDeviceToDevice);
+		// cublasCheckError(cublasDgemv(dev.handle_cublas, CUBLAS_OP_T, m, n, &neg_one, dev.A, m, dev.y, 1, &one, dev.rc, 1));
+
+		// Select entering variable
+		mask_basis<<<dev.grid_dim_1D, block_dim_1d>>>(dev.rc, dev.B_ids, -1.0, m);
+		thrust::device_ptr<double> thrust_rc(dev.rc);
+		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
+		int enter = iterator - thrust_rc;
+		
+		if (*iterator <= optimality_tol) {
+			status = SolveStatus::OptimumFound;
+			break;
+		}
+		
+		// Assemble A_enter from A_csc
+		cudaMemset(dev.d, 0, m * sizeof(double));
+		int starts_enter = lp_problem.starts[enter];
+		int col_nnz = lp_problem.starts[enter + 1] - starts_enter;
+		scatter_column<<<div_up(col_nnz, block_dim_1d), block_dim_1d>>>(
+			dev.d, dev.A_csc.values, dev.A_csc.indices, starts_enter, col_nnz
+		);
+
+		// Solve for d: B * d = A_enter
+		// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.d, m, dev.info));
+		
+		// Ratio test
+		auto [theta_min, leave] = thrust::transform_reduce(
+			thrust::device,
+			thrust::make_counting_iterator(0),
+			thrust::make_counting_iterator(m),
+			RatioTestUnaryOp{dev.xB, dev.d},
+			thrust::make_pair(DBL_MAX, -1),
+			MinPairOp()
+		);
+		
+		if (leave == -1 || theta_min >= DBL_MAX) {
+			status = SolveStatus::Unbounded;
+			break;
+		}
+
+		// Update B_ids, factorise B
+		cuda_memcpy(dev.B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
+		dev.assemble_basis();
+		// cusolverCheckError(cusolverDnDgetrf(dev.handle, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
+
+		// Update xB
+		if (iteration % xB_update_interval) {
+			update_xB<<<dev.grid_dim_1D, block_dim_1d>>>(dev.xB, dev.d, leave, theta_min, m);
+		} else {
+			cuda_memcpy(dev.xB, dev.b, m, cudaMemcpyDeviceToDevice);
+			// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.xB, m, dev.info));
+		}
+	}
+	std::cout << "Iterations: " << std::min(iteration, max_iterations) << '\n';
+
+	double z;
+	if (status != SolveStatus::Unbounded) {
+		gather_cost<<<dev.grid_dim_1D, block_dim_1d>>>(dev.y, dev.c, dev.B_ids, m);
+		cublasDdot(dev.handle_cublas, m, dev.y, 1, dev.xB, 1, &z);
+	}
+
+	return std::make_pair(z, status);
+}
+
+/* ===================== PHASE TRANSITION ===================== */
+
+void phase_transition(DeviceResources& dev, LP_problem& lp_problem) {
 
 	int m = lp_problem.m;
 	int id_start  = lp_problem.identity_start;
@@ -559,20 +577,20 @@ void transition(DeviceResources& dev, LP_problem lp_problem) {
 
 		int row = ix - id_start;
 
-		// build a unit vector
+		// Build a unit vector
 		cudaMemset(dev.y, 0, m * sizeof(double));
 		cuda_memcpy(dev.y + row, &one, 1, cudaMemcpyHostToDevice);
 
-		// solve for y: B^T * y^T = e_row (i.e., extract a row of B_inv)
+		// Solve for y: B^T * y^T = e_row (i.e., extract a row of B_inv)
 		// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_T, m, 1, dev.B, m, dev.ipiv, dev.y, m, dev.info));
 
-		// compute rc = A^T * y^T
+		// Compute rc = A^T * y^T
 		// cublasCheckError(cublasDgemv(dev.handle_cublas, CUBLAS_OP_T, m, art_start, &one, dev.A, m, dev.y, 1, &zero, dev.rc, 1));
 
-		// mask basic variables
-		mask_basis<<<block_dim_1d, dev.grid_dim_1D>>>(dev.rc, dev.B_ids, 0.0, m);
+		// Mask basic variables
+		mask_basis<<<dev.grid_dim_1D, block_dim_1d>>>(dev.rc, dev.B_ids, 0.0, m);
 
-		// pick the first element with a non-zero coefficient
+		// Pick the first element with a non-zero coefficient
 		thrust::device_ptr<double> first(dev.rc);
 		auto last = first + art_start;
 		auto iterator = thrust::find_if(first, last, IsNonZero());
@@ -583,19 +601,21 @@ void transition(DeviceResources& dev, LP_problem lp_problem) {
 			std::exit(EXIT_FAILURE);
 		}
 
-		// update B_ids and factorise B
+		// Update B_ids and factorise B
 		cuda_memcpy(dev.B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
 		dev.assemble_basis();
 		// cusolverCheckError(cusolverDnDgetrf(dev.handle, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
 	}
 
-	// update the cost and xB
+	// Update the cost and xB
 	cuda_memcpy(dev.c, lp_problem.c.data(), art_start, cudaMemcpyHostToDevice);
 	cuda_memcpy(dev.xB, lp_problem.b.data(), m, cudaMemcpyHostToDevice);
 	// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.xB, m, dev.info));
 }
 
-std::pair<double, SolveStatus> solve(LP_problem lp_problem) {
+/* ===================== SOLVE ===================== */
+
+std::pair<double, SolveStatus> solve(LP_problem& lp_problem) {
 
 	int m = lp_problem.m;
 	int id_start  = lp_problem.identity_start;
@@ -611,7 +631,7 @@ std::pair<double, SolveStatus> solve(LP_problem lp_problem) {
 	// cusolverCheckError(cusolverDnDgetrs(dev.handle, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.xB, m, dev.info));
 
 	// Phase I	
-	auto [art_sum, status] = core(dev, m, art_end);
+	auto [art_sum, status] = core(m, art_end, dev, lp_problem);
 
 	// Check feasability (and correctness)
 	if (status != SolveStatus::OptimumFound || fabs(art_sum) > optimality_tol) {
@@ -620,12 +640,14 @@ std::pair<double, SolveStatus> solve(LP_problem lp_problem) {
 		          << ", " << art_sum << '\n';
 	}
 
-	// Transition between the phases
-	transition(dev, lp_problem);
+	// Transition between the two phases
+	phase_transition(dev, lp_problem);
 
 	// Phase II
-	return core(dev, m, art_start);
+	return core(m, art_start, dev, lp_problem);
 }
+
+/* ===================== MAIN ===================== */
 
 int main() {
 	std::ios_base::sync_with_stdio(false);

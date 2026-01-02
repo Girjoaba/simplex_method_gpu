@@ -186,7 +186,7 @@ std::pair<double, SolveStatus> core(
 
 	for (iteration = 1; iteration <= MAX_ITERS; ++iteration) {
 		// solve for y: B^T * y^T = cB^T
-		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
+		gather_cost<<<grid_dim_1D, BLOCK_DIM_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
 		cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_T, m, 1, gpu.B, m, gpu.ipiv, gpu.y, m, gpu.info));
 
 		// compute rc^T = -A^T * y^T + c^T
@@ -194,7 +194,7 @@ std::pair<double, SolveStatus> core(
 		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, n, &MINUS_ONE, gpu.A, m, gpu.y, 1, &ONE, gpu.rc, 1));
 
 		// select entering variable
-		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.rc, gpu.B_ids, -1.0, m);
+		mask_basis<<<grid_dim_1D, BLOCK_DIM_1D>>>(gpu.rc, gpu.B_ids, -1.0, m);
 		thrust::device_ptr<double> thrust_rc(gpu.rc);
 		auto iterator = thrust::max_element(thrust_rc, thrust_rc + n);
 		int enter = iterator - thrust_rc;
@@ -230,7 +230,7 @@ std::pair<double, SolveStatus> core(
 
 		// update xB
 		if (iteration % SOLUTION_PERIOD) {
-			update_xB<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.xB, gpu.d, leave, theta_min, m);
+			update_xB<<<grid_dim_1D, BLOCK_DIM_1D>>>(gpu.xB, gpu.d, leave, theta_min, m);
 		} else {
 			cuda_memcpy(gpu.xB, gpu.b, m, cudaMemcpyDeviceToDevice);
 			cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.B, m, gpu.ipiv, gpu.xB, m, gpu.info));
@@ -240,7 +240,7 @@ std::pair<double, SolveStatus> core(
 
 	double z;
 	if (status != SolveStatus::Unbounded) {
-		gather_cost<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
+		gather_cost<<<grid_dim_1D, BLOCK_DIM_1D>>>(gpu.y, gpu.c, gpu.B_ids, m);
 		cublasDdot(gpu.handle_cublas, m, gpu.y, 1, gpu.xB, 1, &z);
 	}
 
@@ -299,7 +299,7 @@ std::pair<double, SolveStatus> solve(
 		// compute rc = A^T * y^T
 		cublasCheckError(cublasDgemv(gpu.handle_cublas, CUBLAS_OP_T, m, artificial_start, &ONE, gpu.A, m, gpu.y, 1, &ZERO, gpu.rc, 1));
 		// mask basic variables
-		mask_basis<<<BLOCK_DIM_1D, grid_dim_1D>>>(gpu.rc, gpu.B_ids, 0.0, m);
+		mask_basis<<<grid_dim_1D, BLOCK_DIM_1D>>>(gpu.rc, gpu.B_ids, 0.0, m);
 		// pick the first element with a non-zero coefficient
 		thrust::device_ptr<double> first(gpu.rc);
 		auto last = first + artificial_start;

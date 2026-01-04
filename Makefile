@@ -1,14 +1,15 @@
 ARCH ?= sm_80
 EIGEN_DIR ?= $(HOME)/eigen-3.4.0
+CUDSS_DIR ?= $(HOME)/cudss-0.7.1.4
 
 # Compiler flags
 NVCC        := nvcc
 CXX         := g++
-CXXFLAGS    := -I $(EIGEN_DIR) --std=c++17 -O3
+CXXFLAGS    := --std=c++17 -O3
 CPP_FLAGS	  := -march=native -ffp-contract=fast
+EIGEN_FLAGS	:= -I$(EIGEN_DIR) --expt-relaxed-constexpr -Xcudafe --diag_suppress=20012
 CUDA_FLAGS  := -arch=$(ARCH) -lcusolver -lcudart -lcublas -lcusparse 
-EIGEN_FLAGS	:= --expt-relaxed-constexpr -Xcudafe --diag_suppress=20012
-# LIBS        := -lcublas
+CUDSS_FLAGS := -I${CUDSS_DIR}/include -L${CUDSS_DIR}/lib -lcudss
 
 # Paths
 SRC_DIR           := src
@@ -47,7 +48,7 @@ BIG_M_TARGETS := $(patsubst %, $(BIN_SOLVER_DIR)/%.out, $(BIG_M_BASENAMES))
 # CPU_TARGET := $(BIN_SOLVER_DIR)/bm_v1_cpu.out
 
 # --- Two-Phase Sources (will be prefixed with tp_) ---
-TWO_PHASE_SRCS := $(wildcard $(SRC_TWO_PHASE_DIR)/*.cu)
+TWO_PHASE_SRCS := $(wildcard $(SRC_TWO_PHASE_DIR)/v*.cu)
 
 TWO_PHASE_BASENAMES_RAW := $(basename $(notdir $(TWO_PHASE_SRCS)))
 
@@ -65,23 +66,32 @@ all: $(BIG_M_TARGETS) $(CPU_TARGET) $(TWO_PHASE_TARGETS)
 # Build GLPK tools
 $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 	@mkdir -p $(BIN_GLPK_DIR)
-	$(CXX) $(CXXFLAGS) $< -o $@ $(GLPK_LIBS)
+	$(CXX) $(CXXFLAGS) $(EIGEN_FLAGS) $< -o $@ $(GLPK_LIBS)
 
 # === Compile Rule (Pattern Match) ===
 # This maps 'bin_solver/NAME.out' directly to 'src/cuda_slow/NAME.cu'
 $(BIN_SOLVER_DIR)/bm_%.out: $(SRC_BIG_M_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
-	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
+	$(NVCC) $(CXXFLAGS) $(EIGEN_FLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
 
 # === CPU Solver (Eigen-based, no CUDA) ===
 $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
 	@mkdir -p $(BIN_SOLVER_DIR)
-	$(CXX) $(CXXFLAGS) $(CPP_FLAGS) $< -o $@
+	$(CXX) $(CXXFLAGS) $(EIGEN_FLAGS) $(CPP_FLAGS) $< -o $@
+
+# cuDSS
+$(BIN_SOLVER_DIR)/tp_v4_sparse.out: $(SRC_TWO_PHASE_DIR)/v4_sparse.cu
+	@mkdir -p $(BIN_SOLVER_DIR)
+	$(NVCC) $(CXXFLAGS) \
+	$(EIGEN_FLAGS) \
+	$(CUDA_FLAGS) \
+	$(CUDSS_FLAGS) \
+	$< -o $@
 
 # === two-phase-method ===
 $(BIN_SOLVER_DIR)/tp_%.out: $(SRC_TWO_PHASE_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
-	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
+	$(NVCC) $(CXXFLAGS) $(EIGEN_FLAGS) $(CUDA_FLAGS) $< -o $@
 
 # === Run Rules ===
 # Allows running specific versions like: make run-v1_cpu

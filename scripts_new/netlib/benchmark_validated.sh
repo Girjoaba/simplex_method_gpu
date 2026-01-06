@@ -32,6 +32,8 @@ SOLVERS=(
     "bm_v8_full_gpu"
     "bm_v10_sherman_morris_opt"
     "bm_v11_sparse"
+    "bm_v12_fused"
+    "bm_v13_graph"
 )
 
 PROBLEM_SUMMARY="scripts_new/netlib/problem_summary.csv"

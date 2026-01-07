@@ -1,4 +1,4 @@
-ARCH ?= sm_80
+ARCH ?= sm_86
 EIGEN_DIR ?= $(HOME)/eigen-3.4.0
 CUDSS_DIR ?= $(HOME)/cudss-0.7.1.4
 
@@ -72,7 +72,7 @@ $(BIN_GLPK_DIR)/%: $(SRC_GLPK_DIR)/%.cpp
 # This maps 'bin_solver/NAME.out' directly to 'src/cuda_slow/NAME.cu'
 $(BIN_SOLVER_DIR)/bm_%.out: $(SRC_BIG_M_DIR)/%.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
-	$(NVCC) $(CXXFLAGS) $(EIGEN_FLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
+	$(NVCC) $(CXXFLAGS) $(CUDA_FLAGS) $(EIGEN_FLAGS) $< -o $@
 
 # === CPU Solver (Eigen-based, no CUDA) ===
 $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp

@@ -88,7 +88,7 @@ struct DeviceResources {
 	cusolverDnHandle_t handle;
 	cublasHandle_t handle_cublas;
 
-	double *A, *c, *xB;
+	double *A, *b, *c, *xB;
 	double *d;   // direction
 	double *rc;  // reduced cost
 	int m, *B_ids;
@@ -100,7 +100,7 @@ struct DeviceResources {
 	std::vector<PtrAlloc<int>> int_allocs;
 
 	DeviceResources(int m, int n) : m(m),
-		double_allocs {{A, m * n}, {c, n}, {xB, m}, {d, m}, {rc, n}, {B, m * m}, {y, m}},
+		double_allocs {{A, m * n}, {b, m}, {c, n}, {xB, m}, {d, m}, {rc, n}, {B, m * m}, {y, m}},
 		int_allocs {{ipiv, m}, {B_ids, m}, {info, 1}} {
 
 		cusolverCheckError(cusolverDnCreate(&handle));
@@ -253,6 +253,7 @@ std::pair<double, SolveStatus> solve(
 
 	DeviceResources gpu(m, artificial_end);
 	cuda_memcpy(gpu.A, A.data(), m * artificial_end, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.b, b.data(), m, cudaMemcpyHostToDevice);
 	cuda_memcpy(gpu.c, cost_phase_one.data(), artificial_end, cudaMemcpyHostToDevice);
 	cuda_memcpy(gpu.B_ids, B_ids.data(), m, cudaMemcpyHostToDevice);
 
@@ -262,7 +263,7 @@ std::pair<double, SolveStatus> solve(
 
 	assemble_basis<<<grid_dim, block_dim>>>(gpu.A, gpu.B, gpu.B_ids, m);
 	cusolverCheckError(cusolverDnDgetrf(gpu.handle, m, m, gpu.B, m, gpu.work, gpu.ipiv, gpu.info));
-	cuda_memcpy(gpu.xB, b.data(), m, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.xB, gpu.b, m, cudaMemcpyDeviceToDevice);
 	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.B, m, gpu.ipiv, gpu.xB, m, gpu.info));
 
 	// =============== Phase I and Phase II ===============
@@ -309,7 +310,7 @@ std::pair<double, SolveStatus> solve(
 	}
 
 	// update xB and the cost
-	cuda_memcpy(gpu.xB, b.data(), m, cudaMemcpyHostToDevice);
+	cuda_memcpy(gpu.xB, gpu.b, m, cudaMemcpyDeviceToDevice);
 	cusolverCheckError(cusolverDnDgetrs(gpu.handle, CUBLAS_OP_N, m, 1, gpu.B, m, gpu.ipiv, gpu.xB, m, gpu.info));
 	cuda_memcpy(gpu.c, c.data(), artificial_start, cudaMemcpyHostToDevice);
 

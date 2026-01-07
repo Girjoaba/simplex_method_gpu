@@ -7,7 +7,7 @@
 // Simplify the handling of the unit vector in phase_transition.
 // Introduce the second stream to factorise in parallel.
 // Rebuild only the shifted columns of the basis.
-// Where do I put convert_sparse and assemble_basis (nnz)?
+// Where do I put sparse_transpose and assemble_basis (nnz)?
 
 #include <algorithm>
 #include <cfloat>
@@ -368,12 +368,12 @@ struct DeviceResources {
 	std::vector<PtrAlloc<double>> double_allocs;
 	std::vector<PtrAlloc<int>>       int_allocs;
 
-	DeviceResources(int m, int art_end, LP_problem& lp_problem) :
+	DeviceResources(int m, int art_end, int nnz) :
 		m(m),
 		block_dim_2D(dim3(block_dim_x, block_dim_y)),
 		grid_dim_1D(dim3(div_up(m, block_dim_1d))),
 		grid_dim_2D(dim3(div_up(m, block_dim_x), div_up(m, block_dim_y))),
-		A_csc(m, art_end, lp_problem.nnz),
+		A_csc(m, art_end, nnz),
 		basis(m),
 		double_allocs {{c, art_end}, {b, m}, {xB, m}, {cB, m}, {rhs, m}, {d, m}, {rc, art_end}, {B, m * m}, {y, m}},
 		int_allocs {{ipiv, m}, {B_ids, m}, {info, 1}} {
@@ -509,12 +509,12 @@ struct DeviceResources {
 			B_ids, basis.thread_to_column_map, nnz
 		);
 
-		// I really don't like the way it's done here.
 		basis.csc.nnz = nnz;
 	}
 
 	// Conversion between CSR and CSC formats depending on source's is_csr flag
-	void convert_sparse(CS& src, CS& dst) {
+	void sparse_transpose(CS& src, CS& dst) {
+
 		int algo_m = src.is_csr ? src.m : src.n;
 		int algo_n = src.is_csr ? src.n : src.m;
 
@@ -563,7 +563,7 @@ struct DeviceResources {
 		// Can be re-used for solving different linear systems.
 		cudssConfig_t config;
 
-		// Holds internal data (e.g., factors related data structures),
+		// Holds internal data (e.g., LU factors arrays),
 		// as well as pointers to user-provided data.
 		// Can be re-used if the systems have the same datatype.
 		cudssData_t data;
@@ -590,6 +590,24 @@ struct DeviceResources {
 		));
 		cudssCheckError(cudssMatrixCreateDn(&x, algo_m, 1, algo_m, solution, CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR));
 		cudssCheckError(cudssMatrixCreateDn(&b, algo_m, 1, algo_m, rhs,      CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR));
+
+		// Adress numerical inaccuracy
+
+		// 1. Set Iterative Refinement (You already have this)
+		int refinement_steps = 3;
+		cudssConfigSet(config, CUDSS_CONFIG_IR_N_STEPS, &refinement_steps, sizeof(int));
+
+		// 2. Enable Pivoting (CRITICAL)
+		// Standard pivot tolerance for Simplex is 1e-6 or 1e-8.
+		// Without this, cudss may divide by very small numbers, causing the e+273 explosion.
+		double pivot_tol_val = 1e-6;
+		cudssConfigSet(config, CUDSS_CONFIG_PIVOT_THRESHOLD, &pivot_tol_val, sizeof(double));
+
+		int use_matching = 1;
+		cudssConfigSet(config, CUDSS_CONFIG_USE_MATCHING, &use_matching, sizeof(int));
+
+		cudssAlgType_t algo = CUDSS_ALG_5;
+		cudssConfigSet(config, CUDSS_CONFIG_MATCHING_ALG, &algo, sizeof(cudssAlgType_t));
 
 		// Reordering & symbolic factorisation
 		cudssCheckError(cudssExecute(handle_cudss, CUDSS_PHASE_ANALYSIS, config, data, A, x, b));
@@ -643,17 +661,19 @@ void sparse2dense(
 			B(indices[k], i) = values[k];
 }
 
-// Build sparse CSC basis on GPU, copy it to CPU,
-// densify it there and copy it back to GPU.
-void assemble_basis_dense_from_sparse(DeviceResources& dev) {
-	dev.assemble_basis();
+// Copy sparse basis to CPU, densify it and copy it back to GPU.
+void densify_basis(DeviceResources& dev) {
+
 	std::vector<double> vals(dev.basis.csc.nnz);
-	std::vector<int> idxs(dev.basis.csc.nnz);
-	std::vector<int> starts(dev.m+1);
-	cuda_memcpy(vals.data(), dev.basis.csc.values, dev.basis.csc.nnz, cudaMemcpyDeviceToHost);
-	cuda_memcpy(idxs.data(), dev.basis.csc.indices, dev.basis.csc.nnz, cudaMemcpyDeviceToHost);
-	cuda_memcpy(starts.data(), dev.basis.csc.starts, dev.m+1, cudaMemcpyDeviceToHost);
+	std::vector<int>    idxs(dev.basis.csc.nnz);
+	std::vector<int>    starts(dev.m+1);
+
+	cuda_memcpy(vals.data(),   dev.basis.csc.values,  dev.basis.csc.nnz, cudaMemcpyDeviceToHost);
+	cuda_memcpy(idxs.data(),   dev.basis.csc.indices, dev.basis.csc.nnz, cudaMemcpyDeviceToHost);
+	cuda_memcpy(starts.data(), dev.basis.csc.starts,  dev.m + 1,         cudaMemcpyDeviceToHost);
+
 	Eigen::MatrixXd B_dense = Eigen::MatrixXd::Zero(dev.m, dev.m);
+	
 	sparse2dense(vals, idxs, starts, B_dense);
 
 	cuda_memcpy(dev.B, B_dense.data(), dev.m * dev.m, cudaMemcpyHostToDevice);
@@ -732,19 +752,19 @@ std::pair<double, SolveStatus> core(
 			break;
 		}
 
-		// Update xB
-		update_xB<<<dev.grid_dim_1D, block_dim_1d>>>(dev.xB, dev.d, leave, theta_min, m);
-
 		// Update B_ids
 		cuda_memcpy(dev.B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
 
-		// Assemble dense B and factorise 
-		assemble_basis_dense_from_sparse(dev);
+		// Assemble sparse B, densify it and factorise
+		dev.assemble_basis();
+		densify_basis(dev);
 		cusolverCheckError(cusolverDnDgetrf(dev.handle_cusolver, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
 
-		// Assemble sparse B
+		// Assemble sparse B and transpose it
 		// dev.assemble_basis();
-		// dev.convert_sparse(dev.basis.csc, dev.basis.csr);
+		// dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
+
+		update_xB<<<dev.grid_dim_1D, block_dim_1d>>>(dev.xB, dev.d, leave, theta_min, m);
 	}
 	std::cout << "Iterations: " << std::min(iteration, max_iterations) << '\n';
 
@@ -760,6 +780,7 @@ std::pair<double, SolveStatus> core(
 /* ===================== PHASE TRANSITION ===================== */
 
 void phase_transition(DeviceResources& dev, LP_problem& lp_problem) {
+
 	int m = lp_problem.m;
 	int id_start  = lp_problem.identity_start;
 	int art_start = lp_problem.artificial_start;
@@ -852,16 +873,17 @@ void phase_transition(DeviceResources& dev, LP_problem& lp_problem) {
 			std::exit(EXIT_FAILURE);
 		}
 
-		// Update B_ids and factorise B
+		// Update B_ids
 		cuda_memcpy(dev.B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
 
-		// Assemble dense B and factorise 
-		assemble_basis_dense_from_sparse(dev);
+		// Assemble sparse B, densify it and factorise
+		dev.assemble_basis();
+		densify_basis(dev);
 		cusolverCheckError(cusolverDnDgetrf(dev.handle_cusolver, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
 
-		// Assemble sparse B
+		// Assemble and transpose sparse B
 		// dev.assemble_basis();
-		// dev.convert_sparse(dev.basis.csc, dev.basis.csr);
+		// dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
 	}
 
 	// Update xB
@@ -878,18 +900,17 @@ void phase_transition(DeviceResources& dev, LP_problem& lp_problem) {
 std::pair<double, SolveStatus> solve(LP_problem& lp_problem) {
 
 	int m = lp_problem.m;
-	int art_start = lp_problem.artificial_start;
-	int art_end   = lp_problem.artificial_end;
+	int art_end = lp_problem.artificial_end;
 
-	DeviceResources dev(m, art_end, lp_problem);
+	DeviceResources dev(m, art_end, lp_problem.nnz);
 	dev.setup(lp_problem);
 
-	assemble_basis_dense_from_sparse(dev);
+	dev.assemble_basis();
+	densify_basis(dev);
 	cusolverCheckError(cusolverDnDgetrf(dev.handle_cusolver, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
 
 	// Get initial basis and xB
-	// dev.assemble_basis();
-	dev.convert_sparse(dev.basis.csc, dev.basis.csr);
+	dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
 	dev.solve_linear_system(dev.basis.csr, dev.xB, dev.b);
 
 	// Phase I	
@@ -906,7 +927,7 @@ std::pair<double, SolveStatus> solve(LP_problem& lp_problem) {
 	// Transition between the two phases
 	phase_transition(dev, lp_problem);
 
-	return core(m, art_start, dev, lp_problem);
+	return core(m, lp_problem.artificial_start, dev, lp_problem);
 }
 
 /* ===================== MAIN ===================== */

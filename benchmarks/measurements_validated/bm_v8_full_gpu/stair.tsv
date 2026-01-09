@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	stair	357	467	-2.5126695119E+02	631	1.599034	0
+bm_v8_full_gpu	stair	357	467	-2.5126695119E+02	631	1.605983	1
+bm_v8_full_gpu	stair	357	467	-2.5126695119E+02	631	1.608870	2
+bm_v8_full_gpu	stair	357	467	-2.5126695119E+02	631	1.609680	3
+bm_v8_full_gpu	stair	357	467	-2.5126695119E+02	631	1.604035	4

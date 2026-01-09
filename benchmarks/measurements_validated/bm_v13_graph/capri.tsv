@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	capri	272	353	2.6900129138E+03	324	0.360540	0
+bm_v13_graph	capri	272	353	2.6900129138E+03	324	0.362147	1
+bm_v13_graph	capri	272	353	2.6900129138E+03	324	0.361367	2
+bm_v13_graph	capri	272	353	2.6900129138E+03	324	0.359936	3
+bm_v13_graph	capri	272	353	2.6900129138E+03	324	0.365319	4

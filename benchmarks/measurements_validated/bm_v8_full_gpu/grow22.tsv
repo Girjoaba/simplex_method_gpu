@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	grow22	441	946	-1.6083433648E+08	1211	23.377723	0
+bm_v8_full_gpu	grow22	441	946	-1.6083433648E+08	1211	23.377943	1
+bm_v8_full_gpu	grow22	441	946	-1.6083433648E+08	1211	23.372597	2
+bm_v8_full_gpu	grow22	441	946	-1.6083433648E+08	1211	23.361705	3
+bm_v8_full_gpu	grow22	441	946	-1.6083433648E+08	1211	23.372324	4

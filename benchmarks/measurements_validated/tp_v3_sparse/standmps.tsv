@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	standmps	468	1075	1.4060175000E+03	307	9.169109	0
+tp_v3_sparse	standmps	468	1075	1.4060175000E+03	307	9.147968	1
+tp_v3_sparse	standmps	468	1075	1.4060175000E+03	307	9.151325	2
+tp_v3_sparse	standmps	468	1075	1.4060175000E+03	307	9.141640	3
+tp_v3_sparse	standmps	468	1075	1.4060175000E+03	307	9.127489	4

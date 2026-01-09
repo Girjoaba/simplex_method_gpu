@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	brandy	221	249	1.5185098965E+03	320	0.324041	0
+bm_v13_graph	brandy	221	249	1.5185098965E+03	320	0.316811	1
+bm_v13_graph	brandy	221	249	1.5185098965E+03	320	0.327940	2
+bm_v13_graph	brandy	221	249	1.5185098965E+03	320	0.324318	3
+bm_v13_graph	brandy	221	249	1.5185098965E+03	320	0.322851	4

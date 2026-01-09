@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	grow15	301	645	-1.0687094129E+08	329	7.235179	0
+tp_v1_baseline	grow15	301	645	-1.0687094129E+08	329	7.256878	1
+tp_v1_baseline	grow15	301	645	-1.0687094129E+08	329	7.255080	2
+tp_v1_baseline	grow15	301	645	-1.0687094129E+08	329	7.241020	3
+tp_v1_baseline	grow15	301	645	-1.0687094129E+08	329	7.247326	4

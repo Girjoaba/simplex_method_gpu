@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	ship12s	1152	2763	1.4892361344E+06	385	3.502113	0
+bm_v10_sherman_morris_opt	ship12s	1152	2763	1.4892361344E+06	385	3.523819	1
+bm_v10_sherman_morris_opt	ship12s	1152	2763	1.4892361344E+06	385	3.521564	2
+bm_v10_sherman_morris_opt	ship12s	1152	2763	1.4892361344E+06	385	3.501270	3
+bm_v10_sherman_morris_opt	ship12s	1152	2763	1.4892361344E+06	385	3.518356	4

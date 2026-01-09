@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	maros-r7	3137	9408	1.4971851665E+06	2372	179.677436	0
+tp_v1_baseline	maros-r7	3137	9408	1.4971851665E+06	2372	180.388916	1
+tp_v1_baseline	maros-r7	3137	9408	1.4971851665E+06	2372	179.968497	2
+tp_v1_baseline	maros-r7	3137	9408	1.4971851665E+06	2372	180.096646	3
+tp_v1_baseline	maros-r7	3137	9408	1.4971851665E+06	2372	179.703604	4

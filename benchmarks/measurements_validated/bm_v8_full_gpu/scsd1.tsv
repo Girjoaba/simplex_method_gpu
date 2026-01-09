@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	scsd1	78	760	8.6666666743E+00	275	0.373449	0
+bm_v8_full_gpu	scsd1	78	760	8.6666666743E+00	275	0.374096	1
+bm_v8_full_gpu	scsd1	78	760	8.6666666743E+00	275	0.368844	2
+bm_v8_full_gpu	scsd1	78	760	8.6666666743E+00	275	0.369791	3
+bm_v8_full_gpu	scsd1	78	760	8.6666666743E+00	275	0.367141	4

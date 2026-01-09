@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	israel	175	142	-8.9664482186E+05	344	0.892612	0
+bm_v8_full_gpu	israel	175	142	-8.9664482186E+05	344	0.894606	1
+bm_v8_full_gpu	israel	175	142	-8.9664482186E+05	344	0.905438	2
+bm_v8_full_gpu	israel	175	142	-8.9664482186E+05	344	0.901572	3
+bm_v8_full_gpu	israel	175	142	-8.9664482186E+05	344	0.892372	4

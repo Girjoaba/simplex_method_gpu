@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	scfxm3	991	1371	5.4901254550E+04	1133	32.210924	0
+tp_v1_baseline	scfxm3	991	1371	5.4901254550E+04	1133	32.121445	1
+tp_v1_baseline	scfxm3	991	1371	5.4901254550E+04	1133	32.093391	2
+tp_v1_baseline	scfxm3	991	1371	5.4901254550E+04	1133	32.164668	3
+tp_v1_baseline	scfxm3	991	1371	5.4901254550E+04	1133	32.384717	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	capri	272	353	2.6900129138E+03	335	0.910528	0
+bm_v8_full_gpu	capri	272	353	2.6900129138E+03	335	0.912503	1
+bm_v8_full_gpu	capri	272	353	2.6900129138E+03	335	0.911374	2
+bm_v8_full_gpu	capri	272	353	2.6900129138E+03	335	0.920373	3
+bm_v8_full_gpu	capri	272	353	2.6900129138E+03	335	0.908421	4

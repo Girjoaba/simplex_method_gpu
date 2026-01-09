@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	recipe	92	180	-2.6661600000E+02	29	0.257345	0
+tp_v2_dense_solve	recipe	92	180	-2.6661600000E+02	29	0.259251	1
+tp_v2_dense_solve	recipe	92	180	-2.6661600000E+02	29	0.259223	2
+tp_v2_dense_solve	recipe	92	180	-2.6661600000E+02	29	0.256111	3
+tp_v2_dense_solve	recipe	92	180	-2.6661600000E+02	29	0.250592	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	ganges	1310	1681	-1.0958573613E+05	682	7.231058	0
+bm_v8_full_gpu	ganges	1310	1681	-1.0958573613E+05	682	7.249451	1
+bm_v8_full_gpu	ganges	1310	1681	-1.0958573613E+05	682	7.228307	2
+bm_v8_full_gpu	ganges	1310	1681	-1.0958573613E+05	682	7.221462	3
+bm_v8_full_gpu	ganges	1310	1681	-1.0958573613E+05	682	7.244334	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	finnis	498	614	1.7279106560E+05	635	0.548691	0
+bm_v11_sparse	finnis	498	614	1.7279106560E+05	635	0.540661	1
+bm_v11_sparse	finnis	498	614	1.7279106560E+05	635	0.543778	2
+bm_v11_sparse	finnis	498	614	1.7279106560E+05	635	0.534623	3
+bm_v11_sparse	finnis	498	614	1.7279106560E+05	635	0.541817	4

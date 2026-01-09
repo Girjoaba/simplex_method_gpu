@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	boeing2	167	143	-3.1501872802E+02	195	0.324758	0
+bm_v13_graph	boeing2	167	143	-3.1501872802E+02	195	0.316734	1
+bm_v13_graph	boeing2	167	143	-3.1501872802E+02	195	0.314394	2
+bm_v13_graph	boeing2	167	143	-3.1501872802E+02	195	0.320625	3
+bm_v13_graph	boeing2	167	143	-3.1501872802E+02	195	0.319951	4

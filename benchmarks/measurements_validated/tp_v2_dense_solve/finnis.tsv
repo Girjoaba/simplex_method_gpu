@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	finnis	498	614	1.7279106560E+05	156	1.526226	0
+tp_v2_dense_solve	finnis	498	614	1.7279106560E+05	156	1.515854	1
+tp_v2_dense_solve	finnis	498	614	1.7279106560E+05	156	1.527049	2
+tp_v2_dense_solve	finnis	498	614	1.7279106560E+05	156	1.515086	3
+tp_v2_dense_solve	finnis	498	614	1.7279106560E+05	156	1.511250	4

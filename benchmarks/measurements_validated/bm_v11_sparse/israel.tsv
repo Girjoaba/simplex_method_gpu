@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	israel	175	142	-8.9664482186E+05	302	0.387953	0
+bm_v11_sparse	israel	175	142	-8.9664482186E+05	302	0.392096	1
+bm_v11_sparse	israel	175	142	-8.9664482186E+05	302	0.387621	2
+bm_v11_sparse	israel	175	142	-8.9664482186E+05	302	0.385362	3
+bm_v11_sparse	israel	175	142	-8.9664482186E+05	302	0.380584	4

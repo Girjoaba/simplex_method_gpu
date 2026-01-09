@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	scfxm2	661	914	3.6660261565E+04	1139	2.194716	0
+bm_v11_sparse	scfxm2	661	914	3.6660261565E+04	1139	2.180520	1
+bm_v11_sparse	scfxm2	661	914	3.6660261565E+04	1139	2.188827	2
+bm_v11_sparse	scfxm2	661	914	3.6660261565E+04	1139	2.182963	3
+bm_v11_sparse	scfxm2	661	914	3.6660261565E+04	1139	2.172115	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	ship04s	403	1458	1.7987147004E+06	201	4.396324	0
+bm_v8_full_gpu	ship04s	403	1458	1.7987147004E+06	201	4.395889	1
+bm_v8_full_gpu	ship04s	403	1458	1.7987147004E+06	201	4.409342	2
+bm_v8_full_gpu	ship04s	403	1458	1.7987147004E+06	201	4.391688	3
+bm_v8_full_gpu	ship04s	403	1458	1.7987147004E+06	201	4.398468	4

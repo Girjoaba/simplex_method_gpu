@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	boeing2	167	143	-3.1501872802E+02	233	0.686686	0
+bm_v8_full_gpu	boeing2	167	143	-3.1501872802E+02	233	0.681026	1
+bm_v8_full_gpu	boeing2	167	143	-3.1501872802E+02	233	0.690581	2
+bm_v8_full_gpu	boeing2	167	143	-3.1501872802E+02	233	0.682481	3
+bm_v8_full_gpu	boeing2	167	143	-3.1501872802E+02	233	0.683132	4

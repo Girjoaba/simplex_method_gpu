@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	standmps	468	1075	1.4060175000E+03	351	1.964107	0
+bm_v11_sparse	standmps	468	1075	1.4060175000E+03	351	1.852740	1
+bm_v11_sparse	standmps	468	1075	1.4060175000E+03	351	1.888628	2
+bm_v11_sparse	standmps	468	1075	1.4060175000E+03	351	1.855320	3
+bm_v11_sparse	standmps	468	1075	1.4060175000E+03	351	1.840563	4

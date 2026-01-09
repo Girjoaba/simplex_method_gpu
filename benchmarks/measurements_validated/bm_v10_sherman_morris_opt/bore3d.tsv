@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	bore3d	234	315	1.3730803942E+03	82	0.292042	0
+bm_v10_sherman_morris_opt	bore3d	234	315	1.3730803942E+03	82	0.290807	1
+bm_v10_sherman_morris_opt	bore3d	234	315	1.3730803942E+03	82	0.294201	2
+bm_v10_sherman_morris_opt	bore3d	234	315	1.3730803942E+03	82	0.282421	3
+bm_v10_sherman_morris_opt	bore3d	234	315	1.3730803942E+03	82	0.285765	4

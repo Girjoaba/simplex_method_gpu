@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	israel	175	142	-8.9664482186E+05	2	0.845015	0
+tp_v1_baseline	israel	175	142	-8.9664482186E+05	2	0.856107	1
+tp_v1_baseline	israel	175	142	-8.9664482186E+05	2	0.858518	2
+tp_v1_baseline	israel	175	142	-8.9664482186E+05	2	0.852520	3
+tp_v1_baseline	israel	175	142	-8.9664482186E+05	2	0.840435	4

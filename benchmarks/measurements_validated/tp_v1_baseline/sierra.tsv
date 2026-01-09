@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	sierra	1228	2036	1.5394362184E+07	356	47.039002	0
+tp_v1_baseline	sierra	1228	2036	1.5394362184E+07	356	47.052816	1
+tp_v1_baseline	sierra	1228	2036	1.5394362184E+07	356	47.091106	2
+tp_v1_baseline	sierra	1228	2036	1.5394362184E+07	356	47.054105	3
+tp_v1_baseline	sierra	1228	2036	1.5394362184E+07	356	47.037542	4

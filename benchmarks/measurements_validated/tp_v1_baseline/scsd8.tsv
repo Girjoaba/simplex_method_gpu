@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	scsd8	398	2750	9.0499999993E+02	534	3.205302	0
+tp_v1_baseline	scsd8	398	2750	9.0499999993E+02	534	3.200431	1
+tp_v1_baseline	scsd8	398	2750	9.0499999993E+02	534	3.213548	2
+tp_v1_baseline	scsd8	398	2750	9.0499999993E+02	534	3.205256	3
+tp_v1_baseline	scsd8	398	2750	9.0499999993E+02	534	3.198387	4

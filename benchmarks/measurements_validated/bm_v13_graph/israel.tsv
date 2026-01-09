@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	israel	175	142	-8.9664482186E+05	302	0.355932	0
+bm_v13_graph	israel	175	142	-8.9664482186E+05	302	0.363880	1
+bm_v13_graph	israel	175	142	-8.9664482186E+05	302	0.353278	2
+bm_v13_graph	israel	175	142	-8.9664482186E+05	302	0.352545	3
+bm_v13_graph	israel	175	142	-8.9664482186E+05	302	0.352843	4

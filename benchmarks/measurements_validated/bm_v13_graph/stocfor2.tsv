@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	stocfor2	2158	2031	-3.9024408538E+04	681	4.495852	0
+bm_v13_graph	stocfor2	2158	2031	-3.9024408538E+04	681	4.495465	1
+bm_v13_graph	stocfor2	2158	2031	-3.9024408538E+04	681	4.487273	2
+bm_v13_graph	stocfor2	2158	2031	-3.9024408538E+04	681	4.485115	3
+bm_v13_graph	stocfor2	2158	2031	-3.9024408538E+04	681	4.502097	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	scagr25	472	500	-1.4753433061E+07	939	4.895608	0
+bm_v5_thrust_max_elem	scagr25	472	500	-1.4753433061E+07	939	4.863280	1
+bm_v5_thrust_max_elem	scagr25	472	500	-1.4753433061E+07	939	4.873636	2
+bm_v5_thrust_max_elem	scagr25	472	500	-1.4753433061E+07	939	4.879058	3
+bm_v5_thrust_max_elem	scagr25	472	500	-1.4753433061E+07	939	4.874373	4

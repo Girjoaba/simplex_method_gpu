@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	sc50a	51	48	-6.4575077059E+01	12	0.270008	0
+bm_v13_graph	sc50a	51	48	-6.4575077059E+01	12	0.275298	1
+bm_v13_graph	sc50a	51	48	-6.4575077059E+01	12	0.278982	2
+bm_v13_graph	sc50a	51	48	-6.4575077059E+01	12	0.268775	3
+bm_v13_graph	sc50a	51	48	-6.4575077059E+01	12	0.279396	4

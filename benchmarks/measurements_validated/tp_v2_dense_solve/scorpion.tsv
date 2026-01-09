@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	scorpion	389	358	1.8781248227E+03	74	0.275684	0
+tp_v2_dense_solve	scorpion	389	358	1.8781248227E+03	74	0.271437	1
+tp_v2_dense_solve	scorpion	389	358	1.8781248227E+03	74	0.268874	2
+tp_v2_dense_solve	scorpion	389	358	1.8781248227E+03	74	0.283263	3
+tp_v2_dense_solve	scorpion	389	358	1.8781248227E+03	74	0.275318	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	etamacro	401	688	-7.5571522837E+02	836	4.882276	0
+bm_v5_thrust_max_elem	etamacro	401	688	-7.5571522837E+02	836	4.869154	1
+bm_v5_thrust_max_elem	etamacro	401	688	-7.5571522837E+02	836	4.883599	2
+bm_v5_thrust_max_elem	etamacro	401	688	-7.5571522837E+02	836	4.872053	3
+bm_v5_thrust_max_elem	etamacro	401	688	-7.5571522837E+02	836	4.876849	4

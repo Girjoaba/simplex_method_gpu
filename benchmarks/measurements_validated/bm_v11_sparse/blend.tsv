@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	blend	75	83	-3.0812149846E+01	107	0.289594	0
+bm_v11_sparse	blend	75	83	-3.0812149846E+01	107	0.287126	1
+bm_v11_sparse	blend	75	83	-3.0812149846E+01	107	0.289303	2
+bm_v11_sparse	blend	75	83	-3.0812149846E+01	107	0.299179	3
+bm_v11_sparse	blend	75	83	-3.0812149846E+01	107	0.294749	4

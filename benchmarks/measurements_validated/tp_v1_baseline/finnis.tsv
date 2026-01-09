@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	finnis	498	614	1.7279106560E+05	156	1.556160	0
+tp_v1_baseline	finnis	498	614	1.7279106560E+05	156	1.565087	1
+tp_v1_baseline	finnis	498	614	1.7279106560E+05	156	1.556472	2
+tp_v1_baseline	finnis	498	614	1.7279106560E+05	156	1.557655	3
+tp_v1_baseline	finnis	498	614	1.7279106560E+05	156	1.564267	4

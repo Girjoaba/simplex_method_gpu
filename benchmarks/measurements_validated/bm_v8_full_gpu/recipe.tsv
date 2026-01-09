@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	recipe	92	180	-2.6661600000E+02	38	0.275374	0
+bm_v8_full_gpu	recipe	92	180	-2.6661600000E+02	38	0.267706	1
+bm_v8_full_gpu	recipe	92	180	-2.6661600000E+02	38	0.274157	2
+bm_v8_full_gpu	recipe	92	180	-2.6661600000E+02	38	0.277395	3
+bm_v8_full_gpu	recipe	92	180	-2.6661600000E+02	38	0.268125	4

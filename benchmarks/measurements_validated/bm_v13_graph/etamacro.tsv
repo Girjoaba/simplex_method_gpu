@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	etamacro	401	688	-7.5571522837E+02	733	0.761085	0
+bm_v13_graph	etamacro	401	688	-7.5571522837E+02	733	0.752403	1
+bm_v13_graph	etamacro	401	688	-7.5571522837E+02	733	0.756151	2
+bm_v13_graph	etamacro	401	688	-7.5571522837E+02	733	0.748089	3
+bm_v13_graph	etamacro	401	688	-7.5571522837E+02	733	0.755549	4

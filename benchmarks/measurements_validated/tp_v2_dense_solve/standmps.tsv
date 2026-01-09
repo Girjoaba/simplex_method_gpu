@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	standmps	468	1075	1.4060175000E+03	316	5.625569	0
+tp_v2_dense_solve	standmps	468	1075	1.4060175000E+03	316	5.621318	1
+tp_v2_dense_solve	standmps	468	1075	1.4060175000E+03	316	5.620545	2
+tp_v2_dense_solve	standmps	468	1075	1.4060175000E+03	316	5.629904	3
+tp_v2_dense_solve	standmps	468	1075	1.4060175000E+03	316	5.631552	4

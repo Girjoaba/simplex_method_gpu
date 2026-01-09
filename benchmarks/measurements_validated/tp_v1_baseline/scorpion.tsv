@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	scorpion	389	358	1.8781248227E+03	74	0.283988	0
+tp_v1_baseline	scorpion	389	358	1.8781248227E+03	74	0.294639	1
+tp_v1_baseline	scorpion	389	358	1.8781248227E+03	74	0.287649	2
+tp_v1_baseline	scorpion	389	358	1.8781248227E+03	74	0.284525	3
+tp_v1_baseline	scorpion	389	358	1.8781248227E+03	74	0.284755	4

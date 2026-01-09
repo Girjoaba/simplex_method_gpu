@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	capri	272	353	2.6900129138E+03	324	0.399900	0
+bm_v10_sherman_morris_opt	capri	272	353	2.6900129138E+03	324	0.393472	1
+bm_v10_sherman_morris_opt	capri	272	353	2.6900129138E+03	324	0.402792	2
+bm_v10_sherman_morris_opt	capri	272	353	2.6900129138E+03	324	0.399372	3
+bm_v10_sherman_morris_opt	capri	272	353	2.6900129138E+03	324	0.401666	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	bore3d	234	315	1.3730803942E+03	60	0.282087	0
+tp_v1_baseline	bore3d	234	315	1.3730803942E+03	60	0.270231	1
+tp_v1_baseline	bore3d	234	315	1.3730803942E+03	60	0.280639	2
+tp_v1_baseline	bore3d	234	315	1.3730803942E+03	60	0.283028	3
+tp_v1_baseline	bore3d	234	315	1.3730803942E+03	60	0.284863	4

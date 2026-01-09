@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	share2b	97	79	-4.1573224074E+02	174	0.373276	0
+bm_v8_full_gpu	share2b	97	79	-4.1573224074E+02	174	0.380612	1
+bm_v8_full_gpu	share2b	97	79	-4.1573224074E+02	174	0.381138	2
+bm_v8_full_gpu	share2b	97	79	-4.1573224074E+02	174	0.381513	3
+bm_v8_full_gpu	share2b	97	79	-4.1573224074E+02	174	0.380590	4

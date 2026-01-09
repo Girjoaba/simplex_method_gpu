@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	ship04s	403	1458	1.7987147004E+06	201	1.878233	0
+bm_v10_sherman_morris_opt	ship04s	403	1458	1.7987147004E+06	201	1.882647	1
+bm_v10_sherman_morris_opt	ship04s	403	1458	1.7987147004E+06	201	1.880454	2
+bm_v10_sherman_morris_opt	ship04s	403	1458	1.7987147004E+06	201	1.882158	3
+bm_v10_sherman_morris_opt	ship04s	403	1458	1.7987147004E+06	201	1.889249	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	capri	272	353	2.6900129138E+03	324	0.408764	0
+bm_v11_sparse	capri	272	353	2.6900129138E+03	324	0.406174	1
+bm_v11_sparse	capri	272	353	2.6900129138E+03	324	0.406479	2
+bm_v11_sparse	capri	272	353	2.6900129138E+03	324	0.406829	3
+bm_v11_sparse	capri	272	353	2.6900129138E+03	324	0.411401	4

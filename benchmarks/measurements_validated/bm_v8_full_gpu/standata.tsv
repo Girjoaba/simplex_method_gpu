@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	standata	360	1075	1.2576995000E+03	165	0.859116	0
+bm_v8_full_gpu	standata	360	1075	1.2576995000E+03	165	0.874083	1
+bm_v8_full_gpu	standata	360	1075	1.2576995000E+03	165	0.873552	2
+bm_v8_full_gpu	standata	360	1075	1.2576995000E+03	165	0.875670	3
+bm_v8_full_gpu	standata	360	1075	1.2576995000E+03	165	0.873013	4

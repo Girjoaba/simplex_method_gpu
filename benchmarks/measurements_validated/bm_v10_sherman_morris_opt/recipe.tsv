@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	recipe	92	180	-2.6661600000E+02	38	0.268443	0
+bm_v10_sherman_morris_opt	recipe	92	180	-2.6661600000E+02	38	0.282092	1
+bm_v10_sherman_morris_opt	recipe	92	180	-2.6661600000E+02	38	0.271040	2
+bm_v10_sherman_morris_opt	recipe	92	180	-2.6661600000E+02	38	0.271333	3
+bm_v10_sherman_morris_opt	recipe	92	180	-2.6661600000E+02	38	0.267525	4

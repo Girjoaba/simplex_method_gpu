@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	seba	516	1028	1.5711600000E+04	5	0.259731	0
+bm_v8_full_gpu	seba	516	1028	1.5711600000E+04	5	0.274308	1
+bm_v8_full_gpu	seba	516	1028	1.5711600000E+04	5	0.262337	2
+bm_v8_full_gpu	seba	516	1028	1.5711600000E+04	5	0.266475	3
+bm_v8_full_gpu	seba	516	1028	1.5711600000E+04	5	0.265937	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	bore3d	234	315	1.3730803942E+03	86	0.286640	0
+bm_v5_thrust_max_elem	bore3d	234	315	1.3730803942E+03	86	0.288943	1
+bm_v5_thrust_max_elem	bore3d	234	315	1.3730803942E+03	86	0.284930	2
+bm_v5_thrust_max_elem	bore3d	234	315	1.3730803942E+03	86	0.282309	3
+bm_v5_thrust_max_elem	bore3d	234	315	1.3730803942E+03	86	0.290047	4

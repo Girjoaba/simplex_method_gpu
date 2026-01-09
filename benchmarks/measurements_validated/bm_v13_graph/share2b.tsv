@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	share2b	97	79	-4.1573224074E+02	190	0.299648	0
+bm_v13_graph	share2b	97	79	-4.1573224074E+02	190	0.289417	1
+bm_v13_graph	share2b	97	79	-4.1573224074E+02	190	0.304014	2
+bm_v13_graph	share2b	97	79	-4.1573224074E+02	190	0.299864	3
+bm_v13_graph	share2b	97	79	-4.1573224074E+02	190	0.303536	4

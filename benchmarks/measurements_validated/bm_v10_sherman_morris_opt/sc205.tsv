@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	sc205	206	203	-5.2202061212E+01	71	0.288055	0
+bm_v10_sherman_morris_opt	sc205	206	203	-5.2202061212E+01	71	0.283393	1
+bm_v10_sherman_morris_opt	sc205	206	203	-5.2202061212E+01	71	0.286450	2
+bm_v10_sherman_morris_opt	sc205	206	203	-5.2202061212E+01	71	0.287027	3
+bm_v10_sherman_morris_opt	sc205	206	203	-5.2202061212E+01	71	0.286215	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	gfrd-pnc	617	1092	6.9022359995E+06	333	1.103906	0
+bm_v8_full_gpu	gfrd-pnc	617	1092	6.9022359995E+06	333	1.105433	1
+bm_v8_full_gpu	gfrd-pnc	617	1092	6.9022359995E+06	333	1.105763	2
+bm_v8_full_gpu	gfrd-pnc	617	1092	6.9022359995E+06	333	1.089458	3
+bm_v8_full_gpu	gfrd-pnc	617	1092	6.9022359995E+06	333	1.100008	4

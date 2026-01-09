@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	maros-r7	3137	9408	1.4971851665E+06	3284	32.774939	0
+bm_v10_sherman_morris_opt	maros-r7	3137	9408	1.4971851665E+06	3284	32.631852	1
+bm_v10_sherman_morris_opt	maros-r7	3137	9408	1.4971851665E+06	3284	32.833137	2
+bm_v10_sherman_morris_opt	maros-r7	3137	9408	1.4971851665E+06	3284	32.735413	3
+bm_v10_sherman_morris_opt	maros-r7	3137	9408	1.4971851665E+06	3284	32.817639	4

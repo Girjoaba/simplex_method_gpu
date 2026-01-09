@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	finnis	498	614	1.7279106560E+05	635	0.455810	0
+bm_v13_graph	finnis	498	614	1.7279106560E+05	635	0.453680	1
+bm_v13_graph	finnis	498	614	1.7279106560E+05	635	0.455513	2
+bm_v13_graph	finnis	498	614	1.7279106560E+05	635	0.461348	3
+bm_v13_graph	finnis	498	614	1.7279106560E+05	635	0.460721	4

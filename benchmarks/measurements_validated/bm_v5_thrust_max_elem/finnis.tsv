@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	finnis	498	614	1.7279106560E+05	528	1.666042	0
+bm_v5_thrust_max_elem	finnis	498	614	1.7279106560E+05	528	1.667123	1
+bm_v5_thrust_max_elem	finnis	498	614	1.7279106560E+05	528	1.670609	2
+bm_v5_thrust_max_elem	finnis	498	614	1.7279106560E+05	528	1.666814	3
+bm_v5_thrust_max_elem	finnis	498	614	1.7279106560E+05	528	1.671135	4

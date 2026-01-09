@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	recipe	92	180	-2.6661600000E+02	38	0.267034	0
+bm_v11_sparse	recipe	92	180	-2.6661600000E+02	38	0.279463	1
+bm_v11_sparse	recipe	92	180	-2.6661600000E+02	38	0.271889	2
+bm_v11_sparse	recipe	92	180	-2.6661600000E+02	38	0.272147	3
+bm_v11_sparse	recipe	92	180	-2.6661600000E+02	38	0.283790	4

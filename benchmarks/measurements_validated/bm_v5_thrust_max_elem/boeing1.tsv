@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	boeing1	351	384	-3.3521356751E+02	924	5.544789	0
+bm_v5_thrust_max_elem	boeing1	351	384	-3.3521356751E+02	924	5.533537	1
+bm_v5_thrust_max_elem	boeing1	351	384	-3.3521356751E+02	924	5.549407	2
+bm_v5_thrust_max_elem	boeing1	351	384	-3.3521356751E+02	924	5.534695	3
+bm_v5_thrust_max_elem	boeing1	351	384	-3.3521356751E+02	924	5.543277	4

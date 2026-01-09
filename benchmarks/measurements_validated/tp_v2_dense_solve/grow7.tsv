@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	grow7	141	301	-4.7787811815E+07	141	0.935432	0
+tp_v2_dense_solve	grow7	141	301	-4.7787811815E+07	141	0.924739	1
+tp_v2_dense_solve	grow7	141	301	-4.7787811815E+07	141	0.924163	2
+tp_v2_dense_solve	grow7	141	301	-4.7787811815E+07	141	0.922428	3
+tp_v2_dense_solve	grow7	141	301	-4.7787811815E+07	141	0.928450	4

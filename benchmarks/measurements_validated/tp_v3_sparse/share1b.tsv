@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	share1b	118	225	-7.6589318579E+04	217	6.824241	0
+tp_v3_sparse	share1b	118	225	-7.6589318579E+04	217	6.822579	1
+tp_v3_sparse	share1b	118	225	-7.6589318579E+04	217	6.838286	2
+tp_v3_sparse	share1b	118	225	-7.6589318579E+04	217	6.815341	3
+tp_v3_sparse	share1b	118	225	-7.6589318579E+04	217	6.821131	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	lotfi	154	308	-2.5264706062E+01	138	0.316658	0
+bm_v13_graph	lotfi	154	308	-2.5264706062E+01	138	0.326437	1
+bm_v13_graph	lotfi	154	308	-2.5264706062E+01	138	0.326004	2
+bm_v13_graph	lotfi	154	308	-2.5264706062E+01	138	0.329207	3
+bm_v13_graph	lotfi	154	308	-2.5264706062E+01	138	0.320560	4

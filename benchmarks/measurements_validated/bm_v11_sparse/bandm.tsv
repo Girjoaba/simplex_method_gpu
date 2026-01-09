@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	bandm	306	472	-1.5862801845E+02	391	0.427351	0
+bm_v11_sparse	bandm	306	472	-1.5862801845E+02	391	0.432728	1
+bm_v11_sparse	bandm	306	472	-1.5862801845E+02	391	0.433307	2
+bm_v11_sparse	bandm	306	472	-1.5862801845E+02	391	0.429122	3
+bm_v11_sparse	bandm	306	472	-1.5862801845E+02	391	0.426514	4

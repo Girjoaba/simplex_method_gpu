@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	ganges	1310	1681	-1.0958573613E+05	681	1.672950	0
+bm_v11_sparse	ganges	1310	1681	-1.0958573613E+05	681	1.668074	1
+bm_v11_sparse	ganges	1310	1681	-1.0958573613E+05	681	1.689387	2
+bm_v11_sparse	ganges	1310	1681	-1.0958573613E+05	681	1.650914	3
+bm_v11_sparse	ganges	1310	1681	-1.0958573613E+05	681	1.662911	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	gfrd-pnc	617	1092	6.9022359995E+06	226	1.186531	0
+tp_v1_baseline	gfrd-pnc	617	1092	6.9022359995E+06	226	1.183557	1
+tp_v1_baseline	gfrd-pnc	617	1092	6.9022359995E+06	226	1.190313	2
+tp_v1_baseline	gfrd-pnc	617	1092	6.9022359995E+06	226	1.182973	3
+tp_v1_baseline	gfrd-pnc	617	1092	6.9022359995E+06	226	1.182747	4

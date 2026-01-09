@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	standata	360	1075	1.2576995000E+03	152	0.855549	0
+bm_v5_thrust_max_elem	standata	360	1075	1.2576995000E+03	152	0.852062	1
+bm_v5_thrust_max_elem	standata	360	1075	1.2576995000E+03	152	0.856690	2
+bm_v5_thrust_max_elem	standata	360	1075	1.2576995000E+03	152	0.853488	3
+bm_v5_thrust_max_elem	standata	360	1075	1.2576995000E+03	152	0.856840	4

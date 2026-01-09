@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	vtp.base	199	203	1.2983146246E+05	36	0.276946	0
+bm_v8_full_gpu	vtp.base	199	203	1.2983146246E+05	36	0.265327	1
+bm_v8_full_gpu	vtp.base	199	203	1.2983146246E+05	36	0.268939	2
+bm_v8_full_gpu	vtp.base	199	203	1.2983146246E+05	36	0.263912	3
+bm_v8_full_gpu	vtp.base	199	203	1.2983146246E+05	36	0.266351	4

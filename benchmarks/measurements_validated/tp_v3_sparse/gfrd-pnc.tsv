@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	gfrd-pnc	617	1092	6.9022359995E+06	226	7.488606	0
+tp_v3_sparse	gfrd-pnc	617	1092	6.9022359995E+06	226	7.496276	1
+tp_v3_sparse	gfrd-pnc	617	1092	6.9022359995E+06	226	7.526284	2
+tp_v3_sparse	gfrd-pnc	617	1092	6.9022359995E+06	226	7.532435	3
+tp_v3_sparse	gfrd-pnc	617	1092	6.9022359995E+06	226	7.491065	4

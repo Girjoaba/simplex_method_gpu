@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	ship04l	403	2118	1.7933245380E+06	284	15.047306	0
+bm_v5_thrust_max_elem	ship04l	403	2118	1.7933245380E+06	284	15.075617	1
+bm_v5_thrust_max_elem	ship04l	403	2118	1.7933245380E+06	284	15.082307	2
+bm_v5_thrust_max_elem	ship04l	403	2118	1.7933245380E+06	284	15.095273	3
+bm_v5_thrust_max_elem	ship04l	403	2118	1.7933245380E+06	284	15.200411	4

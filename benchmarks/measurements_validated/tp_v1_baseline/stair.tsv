@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	stair	357	467	-2.5126695119E+02	361	1.561762	0
+tp_v1_baseline	stair	357	467	-2.5126695119E+02	361	1.535962	1
+tp_v1_baseline	stair	357	467	-2.5126695119E+02	361	1.530699	2
+tp_v1_baseline	stair	357	467	-2.5126695119E+02	361	1.553317	3
+tp_v1_baseline	stair	357	467	-2.5126695119E+02	361	1.538941	4

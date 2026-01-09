@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	stair	357	467	-2.5126695119E+02	573	0.485170	0
+bm_v10_sherman_morris_opt	stair	357	467	-2.5126695119E+02	573	0.483558	1
+bm_v10_sherman_morris_opt	stair	357	467	-2.5126695119E+02	573	0.479424	2
+bm_v10_sherman_morris_opt	stair	357	467	-2.5126695119E+02	573	0.479546	3
+bm_v10_sherman_morris_opt	stair	357	467	-2.5126695119E+02	573	0.482257	4

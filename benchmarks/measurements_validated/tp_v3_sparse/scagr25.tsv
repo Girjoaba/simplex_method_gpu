@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	scagr25	472	500	-1.4753433061E+07	597	17.430877	0
+tp_v3_sparse	scagr25	472	500	-1.4753433061E+07	569	16.635192	1
+tp_v3_sparse	scagr25	472	500	-1.4753433061E+07	603	17.730828	2
+tp_v3_sparse	scagr25	472	500	-1.4753433061E+07	578	16.184835	3
+tp_v3_sparse	scagr25	472	500	-1.4753433061E+07	601	17.979903	4

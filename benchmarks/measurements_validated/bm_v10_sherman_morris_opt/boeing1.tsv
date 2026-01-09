@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	boeing1	351	384	-3.3521356751E+02	973	1.125286	0
+bm_v10_sherman_morris_opt	boeing1	351	384	-3.3521356751E+02	973	1.127053	1
+bm_v10_sherman_morris_opt	boeing1	351	384	-3.3521356751E+02	973	1.133615	2
+bm_v10_sherman_morris_opt	boeing1	351	384	-3.3521356751E+02	973	1.128130	3
+bm_v10_sherman_morris_opt	boeing1	351	384	-3.3521356751E+02	973	1.136279	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	stocfor2	2158	2031	-3.9024408538E+04	476	25.379571	0
+tp_v1_baseline	stocfor2	2158	2031	-3.9024408538E+04	476	25.373097	1
+tp_v1_baseline	stocfor2	2158	2031	-3.9024408538E+04	476	25.364584	2
+tp_v1_baseline	stocfor2	2158	2031	-3.9024408538E+04	476	25.363364	3
+tp_v1_baseline	stocfor2	2158	2031	-3.9024408538E+04	476	25.366211	4

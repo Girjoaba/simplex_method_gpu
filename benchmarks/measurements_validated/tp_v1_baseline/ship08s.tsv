@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	ship08s	779	2387	1.9200982105E+06	300	9.543529	0
+tp_v1_baseline	ship08s	779	2387	1.9200982105E+06	300	9.556686	1
+tp_v1_baseline	ship08s	779	2387	1.9200982105E+06	300	9.547695	2
+tp_v1_baseline	ship08s	779	2387	1.9200982105E+06	300	9.552625	3
+tp_v1_baseline	ship08s	779	2387	1.9200982105E+06	300	9.541094	4

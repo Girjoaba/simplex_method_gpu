@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	standmps	468	1075	1.4060175000E+03	323	5.597971	0
+bm_v8_full_gpu	standmps	468	1075	1.4060175000E+03	323	5.601962	1
+bm_v8_full_gpu	standmps	468	1075	1.4060175000E+03	323	5.598128	2
+bm_v8_full_gpu	standmps	468	1075	1.4060175000E+03	323	5.620516	3
+bm_v8_full_gpu	standmps	468	1075	1.4060175000E+03	323	5.622161	4

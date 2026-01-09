@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	etamacro	401	688	-7.5571522893E+02	809	4.554802	0
+bm_v8_full_gpu	etamacro	401	688	-7.5571522893E+02	809	4.549897	1
+bm_v8_full_gpu	etamacro	401	688	-7.5571522893E+02	809	4.555628	2
+bm_v8_full_gpu	etamacro	401	688	-7.5571522893E+02	809	4.546372	3
+bm_v8_full_gpu	etamacro	401	688	-7.5571522893E+02	809	4.553116	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	scfxm2	661	914	3.6660261565E+04	727	10.190891	0
+tp_v1_baseline	scfxm2	661	914	3.6660261565E+04	727	10.237196	1
+tp_v1_baseline	scfxm2	661	914	3.6660261565E+04	727	10.241747	2
+tp_v1_baseline	scfxm2	661	914	3.6660261565E+04	727	10.244571	3
+tp_v1_baseline	scfxm2	661	914	3.6660261565E+04	727	10.197355	4

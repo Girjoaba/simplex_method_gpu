@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	boeing1	351	384	-3.3521356751E+02	336	4.958976	0
+tp_v1_baseline	boeing1	351	384	-3.3521356751E+02	336	5.002356	1
+tp_v1_baseline	boeing1	351	384	-3.3521356751E+02	336	4.962305	2
+tp_v1_baseline	boeing1	351	384	-3.3521356751E+02	336	4.969100	3
+tp_v1_baseline	boeing1	351	384	-3.3521356751E+02	336	4.966847	4

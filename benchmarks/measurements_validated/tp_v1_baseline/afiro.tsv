@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	afiro	28	32	-4.6475314286E+02	2	0.263177	0
+tp_v1_baseline	afiro	28	32	-4.6475314286E+02	2	0.266951	1
+tp_v1_baseline	afiro	28	32	-4.6475314286E+02	2	0.258692	2
+tp_v1_baseline	afiro	28	32	-4.6475314286E+02	2	0.261526	3
+tp_v1_baseline	afiro	28	32	-4.6475314286E+02	2	0.260872	4

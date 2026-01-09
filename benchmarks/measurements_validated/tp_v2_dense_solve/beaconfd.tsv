@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	beaconfd	174	262	3.3592485807E+04	12	0.246099	0
+tp_v2_dense_solve	beaconfd	174	262	3.3592485807E+04	12	0.250781	1
+tp_v2_dense_solve	beaconfd	174	262	3.3592485807E+04	12	0.264626	2
+tp_v2_dense_solve	beaconfd	174	262	3.3592485807E+04	12	0.249571	3
+tp_v2_dense_solve	beaconfd	174	262	3.3592485807E+04	12	0.252996	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	capri	272	353	2.6900129138E+03	333	0.958049	0
+bm_v5_thrust_max_elem	capri	272	353	2.6900129138E+03	333	0.949588	1
+bm_v5_thrust_max_elem	capri	272	353	2.6900129138E+03	333	0.955486	2
+bm_v5_thrust_max_elem	capri	272	353	2.6900129138E+03	333	0.945619	3
+bm_v5_thrust_max_elem	capri	272	353	2.6900129138E+03	333	0.955920	4

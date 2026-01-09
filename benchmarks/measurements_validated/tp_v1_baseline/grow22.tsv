@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	grow22	441	946	-1.6083433648E+08	441	23.538917	0
+tp_v1_baseline	grow22	441	946	-1.6083433648E+08	441	23.558692	1
+tp_v1_baseline	grow22	441	946	-1.6083433648E+08	441	23.569885	2
+tp_v1_baseline	grow22	441	946	-1.6083433648E+08	441	23.547322	3
+tp_v1_baseline	grow22	441	946	-1.6083433648E+08	441	23.558850	4

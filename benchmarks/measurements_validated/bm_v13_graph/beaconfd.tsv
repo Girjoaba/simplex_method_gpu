@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	beaconfd	174	262	3.3592485807E+04	12	0.276766	0
+bm_v13_graph	beaconfd	174	262	3.3592485807E+04	12	0.280678	1
+bm_v13_graph	beaconfd	174	262	3.3592485807E+04	12	0.271720	2
+bm_v13_graph	beaconfd	174	262	3.3592485807E+04	12	0.273187	3
+bm_v13_graph	beaconfd	174	262	3.3592485807E+04	12	0.285291	4

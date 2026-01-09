@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	scagr7	130	140	-2.3313898243E+06	157	0.296424	0
+bm_v11_sparse	scagr7	130	140	-2.3313898243E+06	157	0.302271	1
+bm_v11_sparse	scagr7	130	140	-2.3313898243E+06	157	0.302674	2
+bm_v11_sparse	scagr7	130	140	-2.3313898243E+06	157	0.298895	3
+bm_v11_sparse	scagr7	130	140	-2.3313898243E+06	157	0.306137	4

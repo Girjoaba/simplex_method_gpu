@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	agg3	517	302	1.0312115935E+07	75	1.019193	0
+tp_v1_baseline	agg3	517	302	1.0312115935E+07	75	1.002409	1
+tp_v1_baseline	agg3	517	302	1.0312115935E+07	75	1.017088	2
+tp_v1_baseline	agg3	517	302	1.0312115935E+07	75	1.005254	3
+tp_v1_baseline	agg3	517	302	1.0312115935E+07	75	1.002379	4

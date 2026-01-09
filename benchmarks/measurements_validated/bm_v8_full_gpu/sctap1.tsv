@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	sctap1	301	480	1.4122500000E+03	212	1.028052	0
+bm_v8_full_gpu	sctap1	301	480	1.4122500000E+03	212	1.023004	1
+bm_v8_full_gpu	sctap1	301	480	1.4122500000E+03	212	1.017598	2
+bm_v8_full_gpu	sctap1	301	480	1.4122500000E+03	212	1.018167	3
+bm_v8_full_gpu	sctap1	301	480	1.4122500000E+03	212	1.026599	4

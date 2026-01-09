@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	scagr7	130	140	-2.3313898243E+06	105	0.339131	0
+tp_v1_baseline	scagr7	130	140	-2.3313898243E+06	105	0.346122	1
+tp_v1_baseline	scagr7	130	140	-2.3313898243E+06	105	0.346524	2
+tp_v1_baseline	scagr7	130	140	-2.3313898243E+06	105	0.343721	3
+tp_v1_baseline	scagr7	130	140	-2.3313898243E+06	105	0.337273	4

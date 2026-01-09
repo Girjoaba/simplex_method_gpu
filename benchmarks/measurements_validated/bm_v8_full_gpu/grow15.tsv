@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	grow15	301	645	-1.0687094129E+08	780	7.376327	0
+bm_v8_full_gpu	grow15	301	645	-1.0687094129E+08	780	7.363164	1
+bm_v8_full_gpu	grow15	301	645	-1.0687094129E+08	780	7.369740	2
+bm_v8_full_gpu	grow15	301	645	-1.0687094129E+08	780	7.362881	3
+bm_v8_full_gpu	grow15	301	645	-1.0687094129E+08	780	7.358287	4

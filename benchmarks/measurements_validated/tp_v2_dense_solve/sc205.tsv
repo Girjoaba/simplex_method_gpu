@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	sc205	206	203	-5.2202061212E+01	18	0.283579	0
+tp_v2_dense_solve	sc205	206	203	-5.2202061212E+01	18	0.267974	1
+tp_v2_dense_solve	sc205	206	203	-5.2202061212E+01	18	0.270890	2
+tp_v2_dense_solve	sc205	206	203	-5.2202061212E+01	18	0.271445	3
+tp_v2_dense_solve	sc205	206	203	-5.2202061212E+01	18	0.266567	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	grow15	301	645	-1.0687094129E+08	816	1.763927	0
+bm_v11_sparse	grow15	301	645	-1.0687094129E+08	816	1.737875	1
+bm_v11_sparse	grow15	301	645	-1.0687094129E+08	816	1.753776	2
+bm_v11_sparse	grow15	301	645	-1.0687094129E+08	816	1.726991	3
+bm_v11_sparse	grow15	301	645	-1.0687094129E+08	816	1.742548	4

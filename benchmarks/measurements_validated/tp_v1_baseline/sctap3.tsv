@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	sctap3	1481	2480	1.4240000000E+03	269	75.692502	0
+tp_v1_baseline	sctap3	1481	2480	1.4240000000E+03	269	75.653965	1
+tp_v1_baseline	sctap3	1481	2480	1.4240000000E+03	269	75.678707	2
+tp_v1_baseline	sctap3	1481	2480	1.4240000000E+03	269	75.640244	3
+tp_v1_baseline	sctap3	1481	2480	1.4240000000E+03	269	75.640900	4

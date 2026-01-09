@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	seba	516	1028	1.5711600000E+04	5	0.268808	0
+bm_v13_graph	seba	516	1028	1.5711600000E+04	5	0.267055	1
+bm_v13_graph	seba	516	1028	1.5711600000E+04	5	0.266118	2
+bm_v13_graph	seba	516	1028	1.5711600000E+04	5	0.269808	3
+bm_v13_graph	seba	516	1028	1.5711600000E+04	5	0.264994	4

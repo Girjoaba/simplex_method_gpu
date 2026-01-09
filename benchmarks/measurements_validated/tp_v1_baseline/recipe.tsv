@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	recipe	92	180	-2.6661600000E+02	29	0.262349	0
+tp_v1_baseline	recipe	92	180	-2.6661600000E+02	29	0.265505	1
+tp_v1_baseline	recipe	92	180	-2.6661600000E+02	29	0.270356	2
+tp_v1_baseline	recipe	92	180	-2.6661600000E+02	29	0.269877	3
+tp_v1_baseline	recipe	92	180	-2.6661600000E+02	29	0.273896	4

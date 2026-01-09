@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	sctap1	301	480	1.4122500000E+03	241	0.523650	0
+bm_v11_sparse	sctap1	301	480	1.4122500000E+03	241	0.531987	1
+bm_v11_sparse	sctap1	301	480	1.4122500000E+03	241	0.520988	2
+bm_v11_sparse	sctap1	301	480	1.4122500000E+03	241	0.535156	3
+bm_v11_sparse	sctap1	301	480	1.4122500000E+03	241	0.539621	4

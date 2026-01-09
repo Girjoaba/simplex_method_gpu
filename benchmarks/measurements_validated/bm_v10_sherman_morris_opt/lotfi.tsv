@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	lotfi	154	308	-2.5264706062E+01	142	0.359692	0
+bm_v10_sherman_morris_opt	lotfi	154	308	-2.5264706062E+01	142	0.360605	1
+bm_v10_sherman_morris_opt	lotfi	154	308	-2.5264706062E+01	142	0.366985	2
+bm_v10_sherman_morris_opt	lotfi	154	308	-2.5264706062E+01	142	0.362628	3
+bm_v10_sherman_morris_opt	lotfi	154	308	-2.5264706062E+01	142	0.363708	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	sctap1	301	480	1.4122500000E+03	243	1.148297	0
+bm_v5_thrust_max_elem	sctap1	301	480	1.4122500000E+03	243	1.153013	1
+bm_v5_thrust_max_elem	sctap1	301	480	1.4122500000E+03	243	1.167903	2
+bm_v5_thrust_max_elem	sctap1	301	480	1.4122500000E+03	243	1.143339	3
+bm_v5_thrust_max_elem	sctap1	301	480	1.4122500000E+03	243	1.144650	4

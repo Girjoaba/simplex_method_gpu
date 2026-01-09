@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	ganges	1310	1681	-1.0958573613E+05	681	1.294293	0
+bm_v13_graph	ganges	1310	1681	-1.0958573613E+05	681	1.292559	1
+bm_v13_graph	ganges	1310	1681	-1.0958573613E+05	681	1.296529	2
+bm_v13_graph	ganges	1310	1681	-1.0958573613E+05	681	1.309630	3
+bm_v13_graph	ganges	1310	1681	-1.0958573613E+05	681	1.299562	4

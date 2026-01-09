@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	blend	75	83	-3.0812149846E+01	143	0.305262	0
+tp_v2_dense_solve	blend	75	83	-3.0812149846E+01	143	0.303099	1
+tp_v2_dense_solve	blend	75	83	-3.0812149846E+01	143	0.320482	2
+tp_v2_dense_solve	blend	75	83	-3.0812149846E+01	143	0.313531	3
+tp_v2_dense_solve	blend	75	83	-3.0812149846E+01	143	0.309784	4

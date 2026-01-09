@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	gfrd-pnc	617	1092	6.9022359995E+06	333	0.480344	0
+bm_v11_sparse	gfrd-pnc	617	1092	6.9022359995E+06	333	0.475245	1
+bm_v11_sparse	gfrd-pnc	617	1092	6.9022359995E+06	333	0.476083	2
+bm_v11_sparse	gfrd-pnc	617	1092	6.9022359995E+06	333	0.490002	3
+bm_v11_sparse	gfrd-pnc	617	1092	6.9022359995E+06	333	0.481760	4

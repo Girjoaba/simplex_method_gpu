@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	sc105	106	103	-5.2202061212E+01	3	0.266392	0
+tp_v1_baseline	sc105	106	103	-5.2202061212E+01	3	0.272015	1
+tp_v1_baseline	sc105	106	103	-5.2202061212E+01	3	0.265752	2
+tp_v1_baseline	sc105	106	103	-5.2202061212E+01	3	0.269172	3
+tp_v1_baseline	sc105	106	103	-5.2202061212E+01	3	0.266003	4

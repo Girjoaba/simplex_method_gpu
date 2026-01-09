@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	maros-r7	3137	9408	1.4971851665E+06	3284	182.146210	0
+bm_v8_full_gpu	maros-r7	3137	9408	1.4971851665E+06	3284	183.010834	1
+bm_v8_full_gpu	maros-r7	3137	9408	1.4971851665E+06	3284	182.339037	2
+bm_v8_full_gpu	maros-r7	3137	9408	1.4971851665E+06	3284	182.687466	3
+bm_v8_full_gpu	maros-r7	3137	9408	1.4971851665E+06	3284	182.182417	4

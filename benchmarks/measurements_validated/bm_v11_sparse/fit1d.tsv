@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	fit1d	25	1026	-9.1463780924E+03	1425	3.043083	0
+bm_v11_sparse	fit1d	25	1026	-9.1463780924E+03	1425	3.049431	1
+bm_v11_sparse	fit1d	25	1026	-9.1463780924E+03	1425	3.031137	2
+bm_v11_sparse	fit1d	25	1026	-9.1463780924E+03	1425	3.025338	3
+bm_v11_sparse	fit1d	25	1026	-9.1463780924E+03	1425	3.031743	4

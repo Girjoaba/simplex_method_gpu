@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	bore3d	234	315	1.3730803942E+03	87	0.287216	0
+bm_v8_full_gpu	bore3d	234	315	1.3730803942E+03	87	0.285897	1
+bm_v8_full_gpu	bore3d	234	315	1.3730803942E+03	87	0.278775	2
+bm_v8_full_gpu	bore3d	234	315	1.3730803942E+03	87	0.285883	3
+bm_v8_full_gpu	bore3d	234	315	1.3730803942E+03	87	0.284041	4

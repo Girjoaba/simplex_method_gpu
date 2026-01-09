@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	brandy	221	249	1.5185098965E+03	273	0.535602	0
+bm_v5_thrust_max_elem	brandy	221	249	1.5185098965E+03	273	0.529974	1
+bm_v5_thrust_max_elem	brandy	221	249	1.5185098965E+03	273	0.518710	2
+bm_v5_thrust_max_elem	brandy	221	249	1.5185098965E+03	273	0.522534	3
+bm_v5_thrust_max_elem	brandy	221	249	1.5185098965E+03	273	0.530300	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	scrs8	491	1169	9.0429695380E+02	153	3.581216	0
+tp_v1_baseline	scrs8	491	1169	9.0429695380E+02	153	3.589960	1
+tp_v1_baseline	scrs8	491	1169	9.0429695380E+02	153	3.566198	2
+tp_v1_baseline	scrs8	491	1169	9.0429695380E+02	153	3.571450	3
+tp_v1_baseline	scrs8	491	1169	9.0429695380E+02	153	3.569933	4

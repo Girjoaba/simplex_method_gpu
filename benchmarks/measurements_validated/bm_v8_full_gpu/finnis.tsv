@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	finnis	498	614	1.7279106560E+05	526	1.585803	0
+bm_v8_full_gpu	finnis	498	614	1.7279106560E+05	526	1.598613	1
+bm_v8_full_gpu	finnis	498	614	1.7279106560E+05	526	1.615891	2
+bm_v8_full_gpu	finnis	498	614	1.7279106560E+05	526	1.581762	3
+bm_v8_full_gpu	finnis	498	614	1.7279106560E+05	526	1.592316	4

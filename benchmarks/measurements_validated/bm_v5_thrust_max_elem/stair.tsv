@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	stair	357	467	-2.5126695119E+02	587	1.608076	0
+bm_v5_thrust_max_elem	stair	357	467	-2.5126695119E+02	587	1.607123	1
+bm_v5_thrust_max_elem	stair	357	467	-2.5126695119E+02	587	1.610833	2
+bm_v5_thrust_max_elem	stair	357	467	-2.5126695119E+02	587	1.608773	3
+bm_v5_thrust_max_elem	stair	357	467	-2.5126695119E+02	587	1.597842	4

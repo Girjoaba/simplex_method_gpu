@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	sierra	1228	2036	1.5394362184E+07	421	41.142902	0
+bm_v5_thrust_max_elem	sierra	1228	2036	1.5394362184E+07	421	41.178264	1
+bm_v5_thrust_max_elem	sierra	1228	2036	1.5394362184E+07	421	41.216047	2
+bm_v5_thrust_max_elem	sierra	1228	2036	1.5394362184E+07	421	41.327580	3
+bm_v5_thrust_max_elem	sierra	1228	2036	1.5394362184E+07	421	41.029468	4

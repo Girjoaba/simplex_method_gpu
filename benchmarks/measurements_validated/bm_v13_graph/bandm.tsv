@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	bandm	306	472	-1.5862801845E+02	391	0.373337	0
+bm_v13_graph	bandm	306	472	-1.5862801845E+02	391	0.372613	1
+bm_v13_graph	bandm	306	472	-1.5862801845E+02	391	0.376334	2
+bm_v13_graph	bandm	306	472	-1.5862801845E+02	391	0.370493	3
+bm_v13_graph	bandm	306	472	-1.5862801845E+02	391	0.370158	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	gfrd-pnc	617	1092	6.9022359995E+06	226	1.112797	0
+tp_v2_dense_solve	gfrd-pnc	617	1092	6.9022359995E+06	226	1.103040	1
+tp_v2_dense_solve	gfrd-pnc	617	1092	6.9022359995E+06	226	1.115029	2
+tp_v2_dense_solve	gfrd-pnc	617	1092	6.9022359995E+06	226	1.108051	3
+tp_v2_dense_solve	gfrd-pnc	617	1092	6.9022359995E+06	226	1.099750	4

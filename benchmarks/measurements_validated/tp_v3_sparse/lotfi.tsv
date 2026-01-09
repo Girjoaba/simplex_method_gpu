@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	lotfi	154	308	-2.5264706062E+01	124	4.672037	0
+tp_v3_sparse	lotfi	154	308	-2.5264706062E+01	124	4.678905	1
+tp_v3_sparse	lotfi	154	308	-2.5264706062E+01	124	4.667501	2
+tp_v3_sparse	lotfi	154	308	-2.5264706062E+01	124	4.676948	3
+tp_v3_sparse	lotfi	154	308	-2.5264706062E+01	124	4.686639	4

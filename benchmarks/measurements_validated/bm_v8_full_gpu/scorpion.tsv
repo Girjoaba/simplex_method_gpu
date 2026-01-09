@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	scorpion	389	358	1.8781248227E+03	105	0.288393	0
+bm_v8_full_gpu	scorpion	389	358	1.8781248227E+03	105	0.297356	1
+bm_v8_full_gpu	scorpion	389	358	1.8781248227E+03	105	0.301359	2
+bm_v8_full_gpu	scorpion	389	358	1.8781248227E+03	105	0.297239	3
+bm_v8_full_gpu	scorpion	389	358	1.8781248227E+03	105	0.297844	4

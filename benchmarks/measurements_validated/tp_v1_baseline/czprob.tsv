@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	czprob	930	3523	2.1851966989E+06	959	199.132717	0
+tp_v1_baseline	czprob	930	3523	2.1851966989E+06	959	199.389245	1
+tp_v1_baseline	czprob	930	3523	2.1851966989E+06	959	198.839680	2
+tp_v1_baseline	czprob	930	3523	2.1851966989E+06	959	199.229730	3
+tp_v1_baseline	czprob	930	3523	2.1851966989E+06	959	198.898040	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	stocfor1	118	111	-4.1131976219E+04	13	0.273043	0
+tp_v1_baseline	stocfor1	118	111	-4.1131976219E+04	13	0.268194	1
+tp_v1_baseline	stocfor1	118	111	-4.1131976219E+04	13	0.268843	2
+tp_v1_baseline	stocfor1	118	111	-4.1131976219E+04	13	0.273808	3
+tp_v1_baseline	stocfor1	118	111	-4.1131976219E+04	13	0.275207	4

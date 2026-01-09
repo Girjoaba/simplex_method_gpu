@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	lotfi	154	308	-2.5264706062E+01	124	0.554728	0
+bm_v5_thrust_max_elem	lotfi	154	308	-2.5264706062E+01	124	0.551105	1
+bm_v5_thrust_max_elem	lotfi	154	308	-2.5264706062E+01	124	0.539978	2
+bm_v5_thrust_max_elem	lotfi	154	308	-2.5264706062E+01	124	0.545256	3
+bm_v5_thrust_max_elem	lotfi	154	308	-2.5264706062E+01	124	0.544877	4

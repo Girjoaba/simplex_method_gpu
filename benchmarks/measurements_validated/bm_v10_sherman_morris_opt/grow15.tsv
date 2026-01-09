@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	grow15	301	645	-1.0687094129E+08	862	1.869015	0
+bm_v10_sherman_morris_opt	grow15	301	645	-1.0687094129E+08	862	1.793840	1
+bm_v10_sherman_morris_opt	grow15	301	645	-1.0687094129E+08	862	1.799630	2
+bm_v10_sherman_morris_opt	grow15	301	645	-1.0687094129E+08	862	1.812183	3
+bm_v10_sherman_morris_opt	grow15	301	645	-1.0687094129E+08	862	1.806360	4

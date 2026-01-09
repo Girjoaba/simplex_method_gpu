@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	sierra	1228	2036	1.5394362184E+07	430	10.199460	0
+bm_v10_sherman_morris_opt	sierra	1228	2036	1.5394362184E+07	430	10.131934	1
+bm_v10_sherman_morris_opt	sierra	1228	2036	1.5394362184E+07	430	10.108794	2
+bm_v10_sherman_morris_opt	sierra	1228	2036	1.5394362184E+07	430	10.086376	3
+bm_v10_sherman_morris_opt	sierra	1228	2036	1.5394362184E+07	430	10.151408	4

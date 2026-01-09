@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	afiro	28	32	-4.6475314286E+02	6	0.261821	0
+bm_v13_graph	afiro	28	32	-4.6475314286E+02	6	0.276348	1
+bm_v13_graph	afiro	28	32	-4.6475314286E+02	6	0.274785	2
+bm_v13_graph	afiro	28	32	-4.6475314286E+02	6	0.259166	3
+bm_v13_graph	afiro	28	32	-4.6475314286E+02	6	0.272330	4

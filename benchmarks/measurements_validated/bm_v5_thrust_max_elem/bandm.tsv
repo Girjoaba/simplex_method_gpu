@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	bandm	306	472	-1.5862801845E+02	392	1.089050	0
+bm_v5_thrust_max_elem	bandm	306	472	-1.5862801845E+02	392	1.097808	1
+bm_v5_thrust_max_elem	bandm	306	472	-1.5862801845E+02	392	1.088018	2
+bm_v5_thrust_max_elem	bandm	306	472	-1.5862801845E+02	392	1.094190	3
+bm_v5_thrust_max_elem	bandm	306	472	-1.5862801845E+02	392	1.099411	4

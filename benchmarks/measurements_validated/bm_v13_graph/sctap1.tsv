@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	sctap1	301	480	1.4122500000E+03	241	0.423701	0
+bm_v13_graph	sctap1	301	480	1.4122500000E+03	241	0.413802	1
+bm_v13_graph	sctap1	301	480	1.4122500000E+03	241	0.426800	2
+bm_v13_graph	sctap1	301	480	1.4122500000E+03	241	0.420384	3
+bm_v13_graph	sctap1	301	480	1.4122500000E+03	241	0.435537	4

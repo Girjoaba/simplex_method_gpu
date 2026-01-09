@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	seba	516	1028	1.5711600000E+04	5	0.264621	0
+bm_v5_thrust_max_elem	seba	516	1028	1.5711600000E+04	5	0.256269	1
+bm_v5_thrust_max_elem	seba	516	1028	1.5711600000E+04	5	0.260030	2
+bm_v5_thrust_max_elem	seba	516	1028	1.5711600000E+04	5	0.260346	3
+bm_v5_thrust_max_elem	seba	516	1028	1.5711600000E+04	5	0.260015	4

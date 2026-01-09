@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	blend	75	83	-3.0812149846E+01	107	0.282662	0
+bm_v10_sherman_morris_opt	blend	75	83	-3.0812149846E+01	107	0.286971	1
+bm_v10_sherman_morris_opt	blend	75	83	-3.0812149846E+01	107	0.279198	2
+bm_v10_sherman_morris_opt	blend	75	83	-3.0812149846E+01	107	0.289704	3
+bm_v10_sherman_morris_opt	blend	75	83	-3.0812149846E+01	107	0.288801	4

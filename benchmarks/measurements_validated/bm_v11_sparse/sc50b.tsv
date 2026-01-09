@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	sc50b	51	48	-7.0000000000E+01	14	0.268013	0
+bm_v11_sparse	sc50b	51	48	-7.0000000000E+01	14	0.269995	1
+bm_v11_sparse	sc50b	51	48	-7.0000000000E+01	14	0.278131	2
+bm_v11_sparse	sc50b	51	48	-7.0000000000E+01	14	0.275962	3
+bm_v11_sparse	sc50b	51	48	-7.0000000000E+01	14	0.272988	4

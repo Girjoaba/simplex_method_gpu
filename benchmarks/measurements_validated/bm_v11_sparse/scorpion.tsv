@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	scorpion	389	358	1.8781248227E+03	104	0.282582	0
+bm_v11_sparse	scorpion	389	358	1.8781248227E+03	104	0.291517	1
+bm_v11_sparse	scorpion	389	358	1.8781248227E+03	104	0.292280	2
+bm_v11_sparse	scorpion	389	358	1.8781248227E+03	104	0.278310	3
+bm_v11_sparse	scorpion	389	358	1.8781248227E+03	104	0.293051	4

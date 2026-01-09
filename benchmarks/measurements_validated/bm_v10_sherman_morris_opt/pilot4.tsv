@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	pilot4	411	1000	-2.5811367433E+03	4069	2.909633	0
+bm_v10_sherman_morris_opt	pilot4	411	1000	-2.5811367433E+03	4069	2.915600	1
+bm_v10_sherman_morris_opt	pilot4	411	1000	-2.5811367433E+03	4069	2.912626	2
+bm_v10_sherman_morris_opt	pilot4	411	1000	-2.5811367433E+03	4069	2.923236	3
+bm_v10_sherman_morris_opt	pilot4	411	1000	-2.5811367433E+03	4069	2.920388	4

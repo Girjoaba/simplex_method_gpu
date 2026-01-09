@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	blend	75	83	-3.0812149846E+01	107	0.292889	0
+bm_v13_graph	blend	75	83	-3.0812149846E+01	107	0.291373	1
+bm_v13_graph	blend	75	83	-3.0812149846E+01	107	0.283070	2
+bm_v13_graph	blend	75	83	-3.0812149846E+01	107	0.288195	3
+bm_v13_graph	blend	75	83	-3.0812149846E+01	107	0.288689	4

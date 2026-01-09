@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	pilot4	411	1000	-2.5811367433E+03	3584	18.708413	0
+bm_v8_full_gpu	pilot4	411	1000	-2.5811367433E+03	3584	18.701468	1
+bm_v8_full_gpu	pilot4	411	1000	-2.5811367433E+03	3584	18.696818	2
+bm_v8_full_gpu	pilot4	411	1000	-2.5811367433E+03	3584	18.700444	3
+bm_v8_full_gpu	pilot4	411	1000	-2.5811367433E+03	3584	18.712364	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	gfrd-pnc	617	1092	6.9022359995E+06	335	1.151808	0
+bm_v5_thrust_max_elem	gfrd-pnc	617	1092	6.9022359995E+06	335	1.145549	1
+bm_v5_thrust_max_elem	gfrd-pnc	617	1092	6.9022359995E+06	335	1.139001	2
+bm_v5_thrust_max_elem	gfrd-pnc	617	1092	6.9022359995E+06	335	1.155263	3
+bm_v5_thrust_max_elem	gfrd-pnc	617	1092	6.9022359995E+06	335	1.149864	4

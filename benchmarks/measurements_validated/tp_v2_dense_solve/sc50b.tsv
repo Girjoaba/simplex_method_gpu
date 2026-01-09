@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	sc50b	51	48	-7.0000000000E+01	10	0.242775	0
+tp_v2_dense_solve	sc50b	51	48	-7.0000000000E+01	10	0.249975	1
+tp_v2_dense_solve	sc50b	51	48	-7.0000000000E+01	10	0.253193	2
+tp_v2_dense_solve	sc50b	51	48	-7.0000000000E+01	10	0.248130	3
+tp_v2_dense_solve	sc50b	51	48	-7.0000000000E+01	10	0.245382	4

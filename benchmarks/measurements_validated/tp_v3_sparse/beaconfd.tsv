@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	beaconfd	174	262	3.3592485807E+04	12	0.647482	0
+tp_v3_sparse	beaconfd	174	262	3.3592485807E+04	12	0.649004	1
+tp_v3_sparse	beaconfd	174	262	3.3592485807E+04	12	0.644973	2
+tp_v3_sparse	beaconfd	174	262	3.3592485807E+04	12	0.647929	3
+tp_v3_sparse	beaconfd	174	262	3.3592485807E+04	12	0.654415	4

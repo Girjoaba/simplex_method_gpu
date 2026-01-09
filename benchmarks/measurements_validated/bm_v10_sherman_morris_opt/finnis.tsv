@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	finnis	498	614	1.7279106560E+05	675	0.553459	0
+bm_v10_sherman_morris_opt	finnis	498	614	1.7279106560E+05	675	0.543339	1
+bm_v10_sherman_morris_opt	finnis	498	614	1.7279106560E+05	675	0.550659	2
+bm_v10_sherman_morris_opt	finnis	498	614	1.7279106560E+05	675	0.540548	3
+bm_v10_sherman_morris_opt	finnis	498	614	1.7279106560E+05	675	0.545500	4

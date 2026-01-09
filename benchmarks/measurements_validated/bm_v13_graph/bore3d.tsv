@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	bore3d	234	315	1.3730803942E+03	82	0.282938	0
+bm_v13_graph	bore3d	234	315	1.3730803942E+03	82	0.282060	1
+bm_v13_graph	bore3d	234	315	1.3730803942E+03	82	0.292238	2
+bm_v13_graph	bore3d	234	315	1.3730803942E+03	82	0.293083	3
+bm_v13_graph	bore3d	234	315	1.3730803942E+03	82	0.282512	4

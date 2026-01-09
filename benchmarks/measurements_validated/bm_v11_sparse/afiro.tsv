@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	afiro	28	32	-4.6475314286E+02	6	0.261512	0
+bm_v11_sparse	afiro	28	32	-4.6475314286E+02	6	0.267259	1
+bm_v11_sparse	afiro	28	32	-4.6475314286E+02	6	0.270010	2
+bm_v11_sparse	afiro	28	32	-4.6475314286E+02	6	0.274978	3
+bm_v11_sparse	afiro	28	32	-4.6475314286E+02	6	0.269767	4

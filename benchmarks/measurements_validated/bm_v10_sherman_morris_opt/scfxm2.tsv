@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	scfxm2	661	914	3.6660261565E+04	1049	2.119194	0
+bm_v10_sherman_morris_opt	scfxm2	661	914	3.6660261565E+04	1049	2.118688	1
+bm_v10_sherman_morris_opt	scfxm2	661	914	3.6660261565E+04	1049	2.115559	2
+bm_v10_sherman_morris_opt	scfxm2	661	914	3.6660261565E+04	1049	2.121743	3
+bm_v10_sherman_morris_opt	scfxm2	661	914	3.6660261565E+04	1049	2.114702	4

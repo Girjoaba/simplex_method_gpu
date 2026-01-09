@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	seba	516	1028	1.5711600000E+04	9	0.289608	0
+tp_v1_baseline	seba	516	1028	1.5711600000E+04	9	0.278733	1
+tp_v1_baseline	seba	516	1028	1.5711600000E+04	9	0.271910	2
+tp_v1_baseline	seba	516	1028	1.5711600000E+04	9	0.289887	3
+tp_v1_baseline	seba	516	1028	1.5711600000E+04	9	0.297295	4

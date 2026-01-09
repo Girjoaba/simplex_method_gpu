@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	standmps	468	1075	1.4060175000E+03	351	1.274286	0
+bm_v13_graph	standmps	468	1075	1.4060175000E+03	351	1.254657	1
+bm_v13_graph	standmps	468	1075	1.4060175000E+03	351	1.261840	2
+bm_v13_graph	standmps	468	1075	1.4060175000E+03	351	1.258913	3
+bm_v13_graph	standmps	468	1075	1.4060175000E+03	351	1.255196	4

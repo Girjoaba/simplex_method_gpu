@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	share1b	118	225	-7.6589318579E+04	217	0.524604	0
+tp_v1_baseline	share1b	118	225	-7.6589318579E+04	217	0.520331	1
+tp_v1_baseline	share1b	118	225	-7.6589318579E+04	217	0.520152	2
+tp_v1_baseline	share1b	118	225	-7.6589318579E+04	217	0.516458	3
+tp_v1_baseline	share1b	118	225	-7.6589318579E+04	217	0.511086	4

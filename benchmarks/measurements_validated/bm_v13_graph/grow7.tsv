@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	grow7	141	301	-4.7787811815E+07	327	0.396184	0
+bm_v13_graph	grow7	141	301	-4.7787811815E+07	327	0.402397	1
+bm_v13_graph	grow7	141	301	-4.7787811815E+07	327	0.398929	2
+bm_v13_graph	grow7	141	301	-4.7787811815E+07	327	0.396097	3
+bm_v13_graph	grow7	141	301	-4.7787811815E+07	327	0.408892	4

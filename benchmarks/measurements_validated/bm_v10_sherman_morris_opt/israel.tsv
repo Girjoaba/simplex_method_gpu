@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	israel	175	142	-8.9664482186E+05	294	0.375379	0
+bm_v10_sherman_morris_opt	israel	175	142	-8.9664482186E+05	294	0.382593	1
+bm_v10_sherman_morris_opt	israel	175	142	-8.9664482186E+05	294	0.375108	2
+bm_v10_sherman_morris_opt	israel	175	142	-8.9664482186E+05	294	0.379911	3
+bm_v10_sherman_morris_opt	israel	175	142	-8.9664482186E+05	294	0.372622	4

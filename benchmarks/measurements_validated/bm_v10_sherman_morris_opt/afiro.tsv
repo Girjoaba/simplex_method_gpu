@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	afiro	28	32	-4.6475314286E+02	6	0.259781	0
+bm_v10_sherman_morris_opt	afiro	28	32	-4.6475314286E+02	6	0.274739	1
+bm_v10_sherman_morris_opt	afiro	28	32	-4.6475314286E+02	6	0.261303	2
+bm_v10_sherman_morris_opt	afiro	28	32	-4.6475314286E+02	6	0.271169	3
+bm_v10_sherman_morris_opt	afiro	28	32	-4.6475314286E+02	6	0.280357	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	standmps	468	1075	1.4060175000E+03	316	6.106934	0
+tp_v1_baseline	standmps	468	1075	1.4060175000E+03	316	6.106585	1
+tp_v1_baseline	standmps	468	1075	1.4060175000E+03	316	6.102033	2
+tp_v1_baseline	standmps	468	1075	1.4060175000E+03	316	6.123319	3
+tp_v1_baseline	standmps	468	1075	1.4060175000E+03	316	6.110879	4

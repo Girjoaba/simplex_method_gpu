@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	grow22	441	946	-1.6083433648E+08	1151	22.757570	0
+bm_v5_thrust_max_elem	grow22	441	946	-1.6083433648E+08	1151	22.774513	1
+bm_v5_thrust_max_elem	grow22	441	946	-1.6083433648E+08	1151	22.751880	2
+bm_v5_thrust_max_elem	grow22	441	946	-1.6083433648E+08	1151	22.765987	3
+bm_v5_thrust_max_elem	grow22	441	946	-1.6083433648E+08	1151	22.770061	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	maros-r7	3137	9408	1.4971851665E+06	3284	185.073405	0
+bm_v5_thrust_max_elem	maros-r7	3137	9408	1.4971851665E+06	3284	185.377791	1
+bm_v5_thrust_max_elem	maros-r7	3137	9408	1.4971851665E+06	3284	185.155451	2
+bm_v5_thrust_max_elem	maros-r7	3137	9408	1.4971851665E+06	3284	185.178688	3
+bm_v5_thrust_max_elem	maros-r7	3137	9408	1.4971851665E+06	3284	184.906943	4

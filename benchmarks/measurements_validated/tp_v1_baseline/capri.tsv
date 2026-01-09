@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	capri	272	353	2.6900129138E+03	228	0.916067	0
+tp_v1_baseline	capri	272	353	2.6900129138E+03	228	0.904372	1
+tp_v1_baseline	capri	272	353	2.6900129138E+03	228	0.896722	2
+tp_v1_baseline	capri	272	353	2.6900129138E+03	228	0.902164	3
+tp_v1_baseline	capri	272	353	2.6900129138E+03	228	0.879840	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	scagr7	130	140	-2.3313898243E+06	157	0.286396	0
+bm_v13_graph	scagr7	130	140	-2.3313898243E+06	157	0.291784	1
+bm_v13_graph	scagr7	130	140	-2.3313898243E+06	157	0.298393	2
+bm_v13_graph	scagr7	130	140	-2.3313898243E+06	157	0.293238	3
+bm_v13_graph	scagr7	130	140	-2.3313898243E+06	157	0.292242	4

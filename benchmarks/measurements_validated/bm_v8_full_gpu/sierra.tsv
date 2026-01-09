@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	sierra	1228	2036	1.5394362184E+07	422	40.984480	0
+bm_v8_full_gpu	sierra	1228	2036	1.5394362184E+07	422	41.077129	1
+bm_v8_full_gpu	sierra	1228	2036	1.5394362184E+07	422	40.840995	2
+bm_v8_full_gpu	sierra	1228	2036	1.5394362184E+07	422	40.915263	3
+bm_v8_full_gpu	sierra	1228	2036	1.5394362184E+07	422	40.963870	4

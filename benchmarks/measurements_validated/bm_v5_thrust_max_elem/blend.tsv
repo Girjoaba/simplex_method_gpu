@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	blend	75	83	-3.0812149846E+01	190	0.330330	0
+bm_v5_thrust_max_elem	blend	75	83	-3.0812149846E+01	190	0.333052	1
+bm_v5_thrust_max_elem	blend	75	83	-3.0812149846E+01	190	0.350628	2
+bm_v5_thrust_max_elem	blend	75	83	-3.0812149846E+01	190	0.338107	3
+bm_v5_thrust_max_elem	blend	75	83	-3.0812149846E+01	190	0.334779	4

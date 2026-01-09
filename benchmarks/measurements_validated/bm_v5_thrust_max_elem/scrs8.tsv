@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	scrs8	491	1169	9.0429695380E+02	573	4.352843	0
+bm_v5_thrust_max_elem	scrs8	491	1169	9.0429695380E+02	573	4.357321	1
+bm_v5_thrust_max_elem	scrs8	491	1169	9.0429695380E+02	573	4.362427	2
+bm_v5_thrust_max_elem	scrs8	491	1169	9.0429695380E+02	573	4.359315	3
+bm_v5_thrust_max_elem	scrs8	491	1169	9.0429695380E+02	573	4.354935	4

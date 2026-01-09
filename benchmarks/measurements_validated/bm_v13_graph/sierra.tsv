@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	sierra	1228	2036	1.5394362184E+07	430	7.437411	0
+bm_v13_graph	sierra	1228	2036	1.5394362184E+07	430	7.410641	1
+bm_v13_graph	sierra	1228	2036	1.5394362184E+07	430	7.433295	2
+bm_v13_graph	sierra	1228	2036	1.5394362184E+07	430	7.405667	3
+bm_v13_graph	sierra	1228	2036	1.5394362184E+07	430	7.425116	4

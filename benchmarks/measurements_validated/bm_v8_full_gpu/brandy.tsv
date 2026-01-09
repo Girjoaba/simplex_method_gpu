@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	brandy	221	249	1.5185098965E+03	298	0.538227	0
+bm_v8_full_gpu	brandy	221	249	1.5185098965E+03	298	0.526202	1
+bm_v8_full_gpu	brandy	221	249	1.5185098965E+03	298	0.523477	2
+bm_v8_full_gpu	brandy	221	249	1.5185098965E+03	298	0.514140	3
+bm_v8_full_gpu	brandy	221	249	1.5185098965E+03	298	0.530055	4

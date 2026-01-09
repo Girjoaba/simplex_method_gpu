@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	adlittle	57	97	2.2549496316E+05	44	2.529845	0
+tp_v3_sparse	adlittle	57	97	2.2549496316E+05	44	2.444666	1
+tp_v3_sparse	adlittle	57	97	2.2549496316E+05	44	2.437593	2
+tp_v3_sparse	adlittle	57	97	2.2549496316E+05	44	2.458904	3
+tp_v3_sparse	adlittle	57	97	2.2549496316E+05	44	2.442735	4

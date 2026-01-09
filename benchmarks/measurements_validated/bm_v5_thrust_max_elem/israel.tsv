@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	israel	175	142	-8.9664482186E+05	344	0.933125	0
+bm_v5_thrust_max_elem	israel	175	142	-8.9664482186E+05	344	0.940130	1
+bm_v5_thrust_max_elem	israel	175	142	-8.9664482186E+05	344	0.922213	2
+bm_v5_thrust_max_elem	israel	175	142	-8.9664482186E+05	344	0.938005	3
+bm_v5_thrust_max_elem	israel	175	142	-8.9664482186E+05	344	0.931949	4

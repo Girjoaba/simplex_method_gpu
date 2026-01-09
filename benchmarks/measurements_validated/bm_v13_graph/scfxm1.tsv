@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	scfxm1	331	457	1.8416759028E+04	566	0.510790	0
+bm_v13_graph	scfxm1	331	457	1.8416759028E+04	566	0.511266	1
+bm_v13_graph	scfxm1	331	457	1.8416759028E+04	566	0.515504	2
+bm_v13_graph	scfxm1	331	457	1.8416759028E+04	566	0.507892	3
+bm_v13_graph	scfxm1	331	457	1.8416759028E+04	566	0.507603	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	blend	75	83	-3.0812149846E+01	189	3.787771	0
+tp_v3_sparse	blend	75	83	-3.0812149846E+01	189	3.797635	1
+tp_v3_sparse	blend	75	83	-3.0812149846E+01	189	3.789110	2
+tp_v3_sparse	blend	75	83	-3.0812149846E+01	189	3.790983	3
+tp_v3_sparse	blend	75	83	-3.0812149846E+01	189	3.807599	4

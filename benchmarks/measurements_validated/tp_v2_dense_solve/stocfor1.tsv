@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	stocfor1	118	111	-4.1131976219E+04	13	0.252326	0
+tp_v2_dense_solve	stocfor1	118	111	-4.1131976219E+04	13	0.251810	1
+tp_v2_dense_solve	stocfor1	118	111	-4.1131976219E+04	13	0.252919	2
+tp_v2_dense_solve	stocfor1	118	111	-4.1131976219E+04	13	0.251467	3
+tp_v2_dense_solve	stocfor1	118	111	-4.1131976219E+04	13	0.245922	4

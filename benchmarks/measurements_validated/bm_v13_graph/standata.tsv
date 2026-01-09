@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	standata	360	1075	1.2576995000E+03	157	0.389733	0
+bm_v13_graph	standata	360	1075	1.2576995000E+03	157	0.392386	1
+bm_v13_graph	standata	360	1075	1.2576995000E+03	157	0.390808	2
+bm_v13_graph	standata	360	1075	1.2576995000E+03	157	0.385946	3
+bm_v13_graph	standata	360	1075	1.2576995000E+03	157	0.399577	4

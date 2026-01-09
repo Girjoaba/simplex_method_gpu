@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	grow7	141	301	-4.7787811815E+07	182	1.064669	0
+tp_v1_baseline	grow7	141	301	-4.7787811815E+07	182	1.065417	1
+tp_v1_baseline	grow7	141	301	-4.7787811815E+07	182	1.067348	2
+tp_v1_baseline	grow7	141	301	-4.7787811815E+07	182	1.059035	3
+tp_v1_baseline	grow7	141	301	-4.7787811815E+07	182	1.067887	4

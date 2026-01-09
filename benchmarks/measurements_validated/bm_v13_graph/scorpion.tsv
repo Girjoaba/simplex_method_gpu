@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	scorpion	389	358	1.8781248227E+03	104	0.283645	0
+bm_v13_graph	scorpion	389	358	1.8781248227E+03	104	0.277216	1
+bm_v13_graph	scorpion	389	358	1.8781248227E+03	104	0.280994	2
+bm_v13_graph	scorpion	389	358	1.8781248227E+03	104	0.279402	3
+bm_v13_graph	scorpion	389	358	1.8781248227E+03	104	0.267616	4

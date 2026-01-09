@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	bandm	306	472	-1.5862801845E+02	150	0.988198	0
+tp_v2_dense_solve	bandm	306	472	-1.5862801845E+02	150	0.992070	1
+tp_v2_dense_solve	bandm	306	472	-1.5862801845E+02	150	0.994503	2
+tp_v2_dense_solve	bandm	306	472	-1.5862801845E+02	150	0.991589	3
+tp_v2_dense_solve	bandm	306	472	-1.5862801845E+02	150	1.001272	4

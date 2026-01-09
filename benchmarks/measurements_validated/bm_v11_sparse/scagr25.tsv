@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	scagr25	472	500	-1.4753433061E+07	817	0.900611	0
+bm_v11_sparse	scagr25	472	500	-1.4753433061E+07	817	0.883175	1
+bm_v11_sparse	scagr25	472	500	-1.4753433061E+07	817	0.876462	2
+bm_v11_sparse	scagr25	472	500	-1.4753433061E+07	817	0.870022	3
+bm_v11_sparse	scagr25	472	500	-1.4753433061E+07	817	0.878727	4

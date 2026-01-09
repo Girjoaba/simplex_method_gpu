@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v1_baseline	ganges	1310	1681	-1.0958573613E+05	273	7.165262	0
+tp_v1_baseline	ganges	1310	1681	-1.0958573613E+05	273	7.161517	1
+tp_v1_baseline	ganges	1310	1681	-1.0958573613E+05	273	7.182427	2
+tp_v1_baseline	ganges	1310	1681	-1.0958573613E+05	273	7.163652	3
+tp_v1_baseline	ganges	1310	1681	-1.0958573613E+05	273	7.163663	4

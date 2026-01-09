@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v8_full_gpu	stocfor2	2158	2031	-3.9024408538E+04	688	26.539649	0
+bm_v8_full_gpu	stocfor2	2158	2031	-3.9024408538E+04	688	26.385873	1
+bm_v8_full_gpu	stocfor2	2158	2031	-3.9024408538E+04	688	26.414104	2
+bm_v8_full_gpu	stocfor2	2158	2031	-3.9024408538E+04	688	26.407997	3
+bm_v8_full_gpu	stocfor2	2158	2031	-3.9024408538E+04	688	26.418922	4

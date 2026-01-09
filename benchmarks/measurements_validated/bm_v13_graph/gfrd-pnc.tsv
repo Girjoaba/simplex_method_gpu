@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	gfrd-pnc	617	1092	6.9022359995E+06	333	0.391062	0
+bm_v13_graph	gfrd-pnc	617	1092	6.9022359995E+06	333	0.392050	1
+bm_v13_graph	gfrd-pnc	617	1092	6.9022359995E+06	333	0.381212	2
+bm_v13_graph	gfrd-pnc	617	1092	6.9022359995E+06	333	0.389047	3
+bm_v13_graph	gfrd-pnc	617	1092	6.9022359995E+06	333	0.391170	4

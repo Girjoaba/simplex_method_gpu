@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	stair	357	467	-2.5126695119E+02	574	0.495929	0
+bm_v11_sparse	stair	357	467	-2.5126695119E+02	574	0.491232	1
+bm_v11_sparse	stair	357	467	-2.5126695119E+02	574	0.489749	2
+bm_v11_sparse	stair	357	467	-2.5126695119E+02	574	0.490617	3
+bm_v11_sparse	stair	357	467	-2.5126695119E+02	574	0.493794	4

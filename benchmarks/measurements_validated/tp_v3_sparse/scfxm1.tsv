@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	scfxm1	331	457	1.8416759028E+04	341	10.027650	0
+tp_v3_sparse	scfxm1	331	457	1.8416759028E+04	341	10.006518	1
+tp_v3_sparse	scfxm1	331	457	1.8416759028E+04	341	10.002802	2
+tp_v3_sparse	scfxm1	331	457	1.8416759028E+04	341	9.933183	3
+tp_v3_sparse	scfxm1	331	457	1.8416759028E+04	341	10.000516	4

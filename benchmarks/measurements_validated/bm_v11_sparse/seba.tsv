@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	seba	516	1028	1.5711600000E+04	5	0.268532	0
+bm_v11_sparse	seba	516	1028	1.5711600000E+04	5	0.275342	1
+bm_v11_sparse	seba	516	1028	1.5711600000E+04	5	0.275771	2
+bm_v11_sparse	seba	516	1028	1.5711600000E+04	5	0.271447	3
+bm_v11_sparse	seba	516	1028	1.5711600000E+04	5	0.259600	4

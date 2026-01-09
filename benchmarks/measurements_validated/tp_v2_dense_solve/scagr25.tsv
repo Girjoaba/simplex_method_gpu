@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	scagr25	472	500	-1.4753433061E+07	634	4.283095	0
+tp_v2_dense_solve	scagr25	472	500	-1.4753433061E+07	634	4.268760	1
+tp_v2_dense_solve	scagr25	472	500	-1.4753433061E+07	634	4.281796	2
+tp_v2_dense_solve	scagr25	472	500	-1.4753433061E+07	634	4.262372	3
+tp_v2_dense_solve	scagr25	472	500	-1.4753433061E+07	634	4.282426	4

@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	bore3d	234	315	1.3730803942E+03	82	0.289576	0
+bm_v11_sparse	bore3d	234	315	1.3730803942E+03	82	0.292959	1
+bm_v11_sparse	bore3d	234	315	1.3730803942E+03	82	0.291492	2
+bm_v11_sparse	bore3d	234	315	1.3730803942E+03	82	0.291796	3
+bm_v11_sparse	bore3d	234	315	1.3730803942E+03	82	0.277153	4

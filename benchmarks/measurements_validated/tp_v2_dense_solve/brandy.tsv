@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v2_dense_solve	brandy	221	249	1.5185098965E+03	169	0.456869	0
+tp_v2_dense_solve	brandy	221	249	1.5185098965E+03	169	0.473952	1
+tp_v2_dense_solve	brandy	221	249	1.5185098965E+03	169	0.469803	2
+tp_v2_dense_solve	brandy	221	249	1.5185098965E+03	169	0.467999	3
+tp_v2_dense_solve	brandy	221	249	1.5185098965E+03	169	0.451064	4

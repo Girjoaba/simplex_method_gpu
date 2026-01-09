@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	share2b	97	79	-4.1573224074E+02	190	0.299182	0
+bm_v10_sherman_morris_opt	share2b	97	79	-4.1573224074E+02	190	0.304251	1
+bm_v10_sherman_morris_opt	share2b	97	79	-4.1573224074E+02	190	0.305265	2
+bm_v10_sherman_morris_opt	share2b	97	79	-4.1573224074E+02	190	0.305376	3
+bm_v10_sherman_morris_opt	share2b	97	79	-4.1573224074E+02	190	0.316333	4

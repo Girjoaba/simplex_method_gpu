@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	finnis	498	614	1.7279106560E+05	147	11.282147	0
+tp_v3_sparse	finnis	498	614	1.7279106560E+05	147	10.418217	1
+tp_v3_sparse	finnis	498	614	1.7279106560E+05	147	11.224720	2
+tp_v3_sparse	finnis	498	614	1.7279106560E+05	147	11.224195	3
+tp_v3_sparse	finnis	498	614	1.7279106560E+05	147	11.337229	4

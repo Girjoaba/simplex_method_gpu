@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+tp_v3_sparse	vtp.base	199	203	1.2983146246E+05	22	0.876514	0
+tp_v3_sparse	vtp.base	199	203	1.2983146246E+05	22	0.881629	1
+tp_v3_sparse	vtp.base	199	203	1.2983146246E+05	22	0.866100	2
+tp_v3_sparse	vtp.base	199	203	1.2983146246E+05	22	0.872190	3
+tp_v3_sparse	vtp.base	199	203	1.2983146246E+05	22	0.866553	4

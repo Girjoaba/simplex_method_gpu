@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v11_sparse	boeing1	351	384	-3.3521356751E+02	973	1.134126	0
+bm_v11_sparse	boeing1	351	384	-3.3521356751E+02	973	1.124271	1
+bm_v11_sparse	boeing1	351	384	-3.3521356751E+02	973	1.135697	2
+bm_v11_sparse	boeing1	351	384	-3.3521356751E+02	973	1.130232	3
+bm_v11_sparse	boeing1	351	384	-3.3521356751E+02	973	1.129563	4

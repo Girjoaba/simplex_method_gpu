@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v5_thrust_max_elem	afiro	28	32	-4.6475314286E+02	6	0.257106	0
+bm_v5_thrust_max_elem	afiro	28	32	-4.6475314286E+02	6	0.254662	1
+bm_v5_thrust_max_elem	afiro	28	32	-4.6475314286E+02	6	0.259974	2
+bm_v5_thrust_max_elem	afiro	28	32	-4.6475314286E+02	6	0.259452	3
+bm_v5_thrust_max_elem	afiro	28	32	-4.6475314286E+02	6	0.256877	4

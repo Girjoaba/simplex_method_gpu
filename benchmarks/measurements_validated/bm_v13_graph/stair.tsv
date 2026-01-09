@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v13_graph	stair	357	467	-2.5126695119E+02	574	0.409994	0
+bm_v13_graph	stair	357	467	-2.5126695119E+02	574	0.406798	1
+bm_v13_graph	stair	357	467	-2.5126695119E+02	574	0.415409	2
+bm_v13_graph	stair	357	467	-2.5126695119E+02	574	0.415142	3
+bm_v13_graph	stair	357	467	-2.5126695119E+02	574	0.406875	4

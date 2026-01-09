@@ -1,0 +1,6 @@
+solver	problem	m	n	optimum	iterations	time_sec	run_id
+bm_v10_sherman_morris_opt	etamacro	401	688	-7.5571522837E+02	733	0.941268	0
+bm_v10_sherman_morris_opt	etamacro	401	688	-7.5571522837E+02	733	0.937626	1
+bm_v10_sherman_morris_opt	etamacro	401	688	-7.5571522837E+02	733	0.961014	2
+bm_v10_sherman_morris_opt	etamacro	401	688	-7.5571522837E+02	733	0.951999	3
+bm_v10_sherman_morris_opt	etamacro	401	688	-7.5571522837E+02	733	0.946364	4

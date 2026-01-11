@@ -80,7 +80,7 @@ $(CPU_TARGET): $(SRC_BIG_M_DIR)/v1_cpu.cpp
 	$(CXX) $(CXXFLAGS) $(EIGEN_FLAGS) $(CPP_FLAGS) $< -o $@
 
 # cuDSS
-$(BIN_SOLVER_DIR)/tp_v4_sparse.out: $(SRC_TWO_PHASE_DIR)/v4_sparse.cu
+$(BIN_SOLVER_DIR)/tp_v3_sparse.out: $(SRC_TWO_PHASE_DIR)/v3_sparse.cu
 	@mkdir -p $(BIN_SOLVER_DIR)
 	$(NVCC) $(CXXFLAGS) \
 	$(EIGEN_FLAGS) \

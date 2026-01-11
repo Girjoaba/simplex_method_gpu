@@ -24,10 +24,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
+# Set library path for cuDSS (needed by tp_v3_sparse)
+export LD_LIBRARY_PATH="${HOME}/cudss-0.7.1.4/lib:${LD_LIBRARY_PATH:-}"
+
 # Solvers to benchmark
 SOLVERS=(
     "tp_v1_baseline"
-    "tp_v3_fast_xB"
+    "tp_v2_dense_solve"
     "bm_v5_thrust_max_elem"
     "bm_v8_full_gpu"
     "bm_v10_sherman_morris_opt"
@@ -36,7 +39,7 @@ SOLVERS=(
     "bm_v13_graph"
 )
 
-PROBLEM_SUMMARY="scripts_new/netlib/problem_summary.csv"
+PROBLEM_SUMMARY="scripts/netlib/problem_summary.csv"
 PREPROCESSED_DIR="test/netlib/preprocessed"
 RESULTS_DIR="benchmarks/measurements_validated"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")

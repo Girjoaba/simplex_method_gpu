@@ -11,7 +11,7 @@ if [ $# -lt 1 ]; then
 fi
 
 solver_bin="$1"
-problem_summary="scripts_new/netlib/problem_summary.csv"
+problem_summary="scripts_new/netlib/sparse_problem_summary.csv"
 
 if [ ! -f "$problem_summary" ]; then
 	echo "The problem summary table does not exist: $problem_summary" >&2
@@ -32,15 +32,15 @@ total_time=0
 while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 
 	problem="${UPPER_CASE_PROBLEM,,}"
-	preprocessed_file="test/netlib/preprocessed/${problem}.preprocessed"
+	sparse_file="test/netlib/sparse/${problem}.sparse"
 
 	if [[ -n "${target_problem}" ]]; then
 		[[ "$problem" == "$target_problem" ]] || continue
 	fi
 
-	if [ ! -f "$preprocessed_file" ]; then
+	if [ ! -f "$sparse_file" ]; then
 		printf "[missing] %-25s %-4s %s %-60s\n" \
-			"$problem" "MISS" "🗂" "(${preprocessed_file} not found)" >&2
+			"$problem" "MISS" "🗂" "(${sparse_file} not found)" >&2
 		missing=$((missing + 1))
 		continue
 	fi
@@ -50,7 +50,7 @@ while IFS=',' read -r UPPER_CASE_PROBLEM _ _ nonzeros _ _ gt_val; do
 	tmp_time=$(mktemp --suffix=.time.tmp)
 
 	exit_code=0
-	{ time -p "$solver_bin" < "$preprocessed_file" > "$tmp_stdout" 2>> "$tmp_stderr" ; } 2>> "$tmp_time" || exit_code=$?
+	{ time -p "$solver_bin" < "$sparse_file" > "$tmp_stdout" 2>> "$tmp_stderr" ; } 2>> "$tmp_time" || exit_code=$?
 
 	real_time=$(grep "real" "$tmp_time" | awk '{print $2}')
 
@@ -107,3 +107,4 @@ echo "Errors  ❌                : $errors"
 echo "Missing 🗂                : $missing"
 echo "Time    ⏰                : ${total_time}s"
 echo "===================================="
+

@@ -17,12 +17,9 @@
 #include <vector>
 #include <utility>
 
-#include <Eigen/Dense>
-
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 #include <cudss.h>
-#include <cusolverDn.h>
 #include <cusparse.h>
 
 #include <thrust/binary_search.h>
@@ -75,14 +72,6 @@ inline void cudssAssert(cudssStatus_t code, const char *file, int line) {
 		          << file << ' ' << line << '\n';
     std::exit(EXIT_FAILURE);
   }
-}
-#define cusolverCheckError(ans) { cusolverAssert((ans), __FILE__, __LINE__); }
-inline void cusolverAssert(cusolverStatus_t code, const char *file, int line) {
-	if (code != CUSOLVER_STATUS_SUCCESS) {
-		std::cerr << "cuSOLVER Error: " << code << ' '
-		          << file << ' ' << line << '\n';
-		std::exit(EXIT_FAILURE);
-	}
 }
 #define cublasCheckError(ans) { cublasAssert((ans), __FILE__, __LINE__); }
 void cublasAssert(cublasStatus_t code, const char *file, int line) {
@@ -190,7 +179,7 @@ struct CS {
 		cuda_memcpy(starts,  h_starts.data(),  (is_csr ? m : n) + 1, cudaMemcpyHostToDevice);
 	}
 
-	// Increases capacity and deletes all data by default !!
+	// Increase capacity and deletes all data by default !!
 	void increase_capacity(int new_capacity, bool keep_data = false) {
 		if (new_capacity <= capacity)
 			return;
@@ -284,14 +273,14 @@ __global__ void gather_cost(double *cB, const double* c, const int* B_ids, int m
 		cB[i] = c[B_ids[i]];
 }
 
-// Computes non-zero counts per column
+// Compute non-zero counts per column
 __global__ void compute_B_column_nnz(int m, int *B_ids, int *B_col_nnz, int *A_starts) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < m)
 		B_col_nnz[i] = A_starts[B_ids[i] + 1] - A_starts[B_ids[i]];
 }
 
-// Gathers B from A_csc using B_ids and thread_to_column_map
+// Gather B from A_csc using B_ids and thread_to_column_map
 __global__ void extract_B(
     double* A_values, int* A_indices, int* A_starts,
     double* B_values, int* B_indices, int* B_starts,
@@ -310,7 +299,7 @@ __global__ void extract_B(
 	}
 }
 
-// Scatters sparse A_p into dense (d)irection
+// Scatter sparse A_p into dense (d)irection
 __global__ void scatter_column(double* d, double* A_values, int* A_indices, int A_starts_enter, int col_nnz) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < col_nnz) {
@@ -340,7 +329,6 @@ struct DeviceResources {
 	cublasHandle_t     handle_cublas;
 	cusparseHandle_t   handle_cusparse;
 	cudssHandle_t      handle_cudss;
-	cusolverDnHandle_t handle_cusolver;
 
 	// Sparse matrix structures
 	CS A_csc;
@@ -355,14 +343,12 @@ struct DeviceResources {
 
 	// Dense vectors
 	double *c, *b;
-	double *cB, *xB;
-	double *rhs;  // for solving Ay = rhs with cuDSS
-	double *d;    // direction
-	double *rc;   // reduced cost
+	double *xB;
+	double *y, *rhs;  // for solving By = rhs with cuDSS
+	double *d;        // direction
+	double *rc;       // reduced cost
 	int *B_ids;
 
-	double *B, *work, *y;
-	int lwork, *ipiv, *info;
 
 	// Pointers grouped by type for easy iteration
 	std::vector<PtrAlloc<double>> double_allocs;
@@ -375,19 +361,15 @@ struct DeviceResources {
 		grid_dim_2D(dim3(div_up(m, block_dim_x), div_up(m, block_dim_y))),
 		A_csc(m, art_end, nnz),
 		basis(m),
-		double_allocs {{c, art_end}, {b, m}, {xB, m}, {cB, m}, {rhs, m}, {d, m}, {rc, art_end}, {B, m * m}, {y, m}},
-		int_allocs {{ipiv, m}, {B_ids, m}, {info, 1}} {
+		double_allocs {{c, art_end}, {b, m}, {xB, m}, {rhs, m}, {d, m}, {rc, art_end}, {y, m}},
+		int_allocs {{B_ids, m}} {
 
 		for (auto &[ptr, size] : double_allocs) cuda_malloc(ptr, size);
 		for (auto &[ptr, size] : int_allocs)    cuda_malloc(ptr, size);
 
-		cusolverCheckError(cusolverDnCreate(&handle_cusolver));
 		cublasCheckError(cublasCreate(&handle_cublas));
 		cusparseCheckError(cusparseCreate(&handle_cusparse));
 		cudssCreate(&handle_cudss);
-
-		cusolverCheckError(cusolverDnDgetrf_bufferSize(handle_cusolver, m, m, B, m, &lwork));
-		cuda_malloc(work, lwork);
 	}
 
 	~DeviceResources() {
@@ -395,7 +377,6 @@ struct DeviceResources {
 		for (auto &[ptr,_] : int_allocs)    cudaFree(ptr);
 
 		// Destroy handles
-		cusolverDnDestroy(handle_cusolver);
 		cublasDestroy(handle_cublas);
 		cusparseDestroy(handle_cusparse);
 		cudssDestroy(handle_cudss);
@@ -591,23 +572,14 @@ struct DeviceResources {
 		cudssCheckError(cudssMatrixCreateDn(&x, algo_m, 1, algo_m, solution, CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR));
 		cudssCheckError(cudssMatrixCreateDn(&b, algo_m, 1, algo_m, rhs,      CUDA_R_64F, CUDSS_LAYOUT_COL_MAJOR));
 
-		// Adress numerical inaccuracy
-
-		// 1. Set Iterative Refinement (You already have this)
-		int refinement_steps = 3;
-		cudssConfigSet(config, CUDSS_CONFIG_IR_N_STEPS, &refinement_steps, sizeof(int));
-
-		// 2. Enable Pivoting (CRITICAL)
-		// Standard pivot tolerance for Simplex is 1e-6 or 1e-8.
-		// Without this, cudss may divide by very small numbers, causing the e+273 explosion.
-		double pivot_tol_val = 1e-6;
-		cudssConfigSet(config, CUDSS_CONFIG_PIVOT_THRESHOLD, &pivot_tol_val, sizeof(double));
+		// Improve numerical stability
+		// Further tuning needed
 
 		int use_matching = 1;
 		cudssConfigSet(config, CUDSS_CONFIG_USE_MATCHING, &use_matching, sizeof(int));
 
-		cudssAlgType_t algo = CUDSS_ALG_5;
-		cudssConfigSet(config, CUDSS_CONFIG_MATCHING_ALG, &algo, sizeof(cudssAlgType_t));
+		int refinement_steps = 2;
+		cudssConfigSet(config, CUDSS_CONFIG_IR_N_STEPS, &refinement_steps, sizeof(int));
 
 		// Reordering & symbolic factorisation
 		cudssCheckError(cudssExecute(handle_cudss, CUDSS_PHASE_ANALYSIS, config, data, A, x, b));
@@ -648,37 +620,6 @@ struct IsNonZero {
 	__device__ bool operator()(double v) const { return fabs(v) > row_tol; }
 };
 
-/* ===================== TEMPORARY UTILITIES ===================== */
-
-void sparse2dense(
-	std::vector<double>& values,
-	std::vector<int>& indices,
-	std::vector<int>& starts,
-	Eigen::MatrixXd& B
-) {
-	for (int i = 0; i < starts.size() - 1; ++i)
-		for (int k = starts[i]; k < starts[i+1]; ++k)
-			B(indices[k], i) = values[k];
-}
-
-// Copy sparse basis to CPU, densify it and copy it back to GPU.
-void densify_basis(DeviceResources& dev) {
-
-	std::vector<double> vals(dev.basis.csc.nnz);
-	std::vector<int>    idxs(dev.basis.csc.nnz);
-	std::vector<int>    starts(dev.m+1);
-
-	cuda_memcpy(vals.data(),   dev.basis.csc.values,  dev.basis.csc.nnz, cudaMemcpyDeviceToHost);
-	cuda_memcpy(idxs.data(),   dev.basis.csc.indices, dev.basis.csc.nnz, cudaMemcpyDeviceToHost);
-	cuda_memcpy(starts.data(), dev.basis.csc.starts,  dev.m + 1,         cudaMemcpyDeviceToHost);
-
-	Eigen::MatrixXd B_dense = Eigen::MatrixXd::Zero(dev.m, dev.m);
-	
-	sparse2dense(vals, idxs, starts, B_dense);
-
-	cuda_memcpy(dev.B, B_dense.data(), dev.m * dev.m, cudaMemcpyHostToDevice);
-}
-
 /* ===================== CORE SIMPLEX LOGIC ===================== */
 
 std::pair<double, SolveStatus> core(
@@ -692,12 +633,10 @@ std::pair<double, SolveStatus> core(
 
 	for (; iteration <= max_iterations; ++iteration) {
 
-		gather_cost<<<dev.grid_dim_1D, block_dim_1d>>>(dev.y, dev.c, dev.B_ids, m);
-		// gather_cost<<<dev.grid_dim_1D, block_dim_1d>>>(dev.cB, dev.c, dev.B_ids, m);
+		gather_cost<<<dev.grid_dim_1D, block_dim_1d>>>(dev.rhs, dev.c, dev.B_ids, m);
 
 		// Solve for y: B^T * y^T = cB^T
-		cusolverCheckError(cusolverDnDgetrs(dev.handle_cusolver, CUBLAS_OP_T, m, 1, dev.B, m, dev.ipiv, dev.y, m, dev.info));
-		// dev.solve_linear_system(dev.basis.csc, dev.y, dev.cB);
+		dev.solve_linear_system(dev.basis.csc, dev.y, dev.rhs);
 
 		// Compute rc^T = -A^T * y^T + c^T
 		cuda_memcpy(dev.rc, dev.c, n_cols, cudaMemcpyDeviceToDevice);
@@ -722,20 +661,15 @@ std::pair<double, SolveStatus> core(
 		}
 		
 		// Assemble A_enter from A_csc
-		cudaMemset(dev.d, 0, m * sizeof(double));
-		// cudaMemset(dev.rhs, 0, m * sizeof(double));
+		cudaMemset(dev.rhs, 0, m * sizeof(double));
 		int starts_enter = lp_problem.starts[enter];
 		int col_nnz = lp_problem.starts[enter + 1] - starts_enter;
 		scatter_column<<<div_up(col_nnz, block_dim_1d), block_dim_1d>>>(
-			dev.d, dev.A_csc.values, dev.A_csc.indices, starts_enter, col_nnz
+			dev.rhs, dev.A_csc.values, dev.A_csc.indices, starts_enter, col_nnz
 		);
-		// scatter_column<<<div_up(col_nnz, block_dim_1d), block_dim_1d>>>(
-		// 	dev.rhs, dev.A_csc.values, dev.A_csc.indices, starts_enter, col_nnz
-		// );
 
 		// Solve for d: B * d = A_enter
-		cusolverCheckError(cusolverDnDgetrs(dev.handle_cusolver, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.d, m, dev.info));
-		// dev.solve_linear_system(dev.basis.csr, dev.d, dev.rhs);
+		dev.solve_linear_system(dev.basis.csr, dev.d, dev.rhs);
 		
 		// Ratio test
 		auto [theta_min, leave] = thrust::transform_reduce(
@@ -755,14 +689,9 @@ std::pair<double, SolveStatus> core(
 		// Update B_ids
 		cuda_memcpy(dev.B_ids + leave, &enter, 1, cudaMemcpyHostToDevice);
 
-		// Assemble sparse B, densify it and factorise
-		dev.assemble_basis();
-		densify_basis(dev);
-		cusolverCheckError(cusolverDnDgetrf(dev.handle_cusolver, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
-
 		// Assemble sparse B and transpose it
-		// dev.assemble_basis();
-		// dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
+		dev.assemble_basis();
+		dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
 
 		update_xB<<<dev.grid_dim_1D, block_dim_1d>>>(dev.xB, dev.d, leave, theta_min, m);
 	}
@@ -840,15 +769,12 @@ void phase_transition(DeviceResources& dev, LP_problem& lp_problem) {
 
 		// Build a unit vector
 		int row = ix - id_start;
-		cudaMemset(dev.y, 0, m * sizeof(double));
-		cuda_memcpy(dev.y + row, &one, 1, cudaMemcpyHostToDevice);
-		// cudaMemset(dev.rhs, 0, m * sizeof(double));
-		// cuda_memcpy(dev.rhs + row, &one, 1, cudaMemcpyHostToDevice);
+		cudaMemset(dev.rhs, 0, m * sizeof(double));
+		cuda_memcpy(dev.rhs + row, &one, 1, cudaMemcpyHostToDevice);
 
 		// Solve for y: B^T * y^T = e_row
 		// i.e., extract a row of the inverse
-		cusolverCheckError(cusolverDnDgetrs(dev.handle_cusolver, CUBLAS_OP_T, m, 1, dev.B, m, dev.ipiv, dev.y, m, dev.info));
-		// dev.solve_linear_system(dev.basis.csc, dev.y, dev.rhs);
+		dev.solve_linear_system(dev.basis.csc, dev.y, dev.rhs);
 
 		// Compute rc = A^T * y^T
 		cusparseSpMV(
@@ -876,20 +802,14 @@ void phase_transition(DeviceResources& dev, LP_problem& lp_problem) {
 		// Update B_ids
 		cuda_memcpy(dev.B_ids + i, &enter, 1, cudaMemcpyHostToDevice);
 
-		// Assemble sparse B, densify it and factorise
+		// Assemble sparse B
 		dev.assemble_basis();
-		densify_basis(dev);
-		cusolverCheckError(cusolverDnDgetrf(dev.handle_cusolver, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
-
-		// Assemble and transpose sparse B
-		// dev.assemble_basis();
-		// dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
 	}
 
 	// Update xB
-	cuda_memcpy(dev.xB, lp_problem.b.data(), m, cudaMemcpyHostToDevice);
-	cusolverCheckError(cusolverDnDgetrs(dev.handle_cusolver, CUBLAS_OP_N, m, 1, dev.B, m, dev.ipiv, dev.xB, m, dev.info));
-	// dev.solve_linear_system(dev.basis.csr, dev.xB, dev.b);
+	cuda_memcpy(dev.xB, dev.b, m, cudaMemcpyDeviceToDevice);
+	dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
+	dev.solve_linear_system(dev.basis.csr, dev.xB, dev.b);
 
 	// Update the cost
 	cuda_memcpy(dev.c, lp_problem.c.data(), art_start, cudaMemcpyHostToDevice);
@@ -905,11 +825,8 @@ std::pair<double, SolveStatus> solve(LP_problem& lp_problem) {
 	DeviceResources dev(m, art_end, lp_problem.nnz);
 	dev.setup(lp_problem);
 
+	// Get initial basis, its transpose and xB
 	dev.assemble_basis();
-	densify_basis(dev);
-	cusolverCheckError(cusolverDnDgetrf(dev.handle_cusolver, m, m, dev.B, m, dev.work, dev.ipiv, dev.info));
-
-	// Get initial basis and xB
 	dev.sparse_transpose(dev.basis.csc, dev.basis.csr);
 	dev.solve_linear_system(dev.basis.csr, dev.xB, dev.b);
 
@@ -974,7 +891,8 @@ int main() {
 			return EXIT_SUCCESS;
 
 		case SolveStatus::MaxIter:
-			std::cerr << "Reached " << max_iterations << " iterations.\n";
+			std::cerr << "Phase II failed: reached " << max_iterations << " iterations.\n";
 			return EXIT_FAILURE;
 	}
 }
+

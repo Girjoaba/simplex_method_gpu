@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-scripts_dir="scripts_new/netlib"
+scripts_dir="scripts/netlib"
 problem_summary="${scripts_dir}/problem_summary.csv"
 
 if [ ! -f "$problem_summary" ]; then

@@ -11,7 +11,7 @@ if [ $# -lt 1 ]; then
 fi
 
 solver_bin="$1"
-problem_summary="scripts_new/netlib/sparse_problem_summary.csv"
+problem_summary="scripts/netlib/problem_summary.csv"
 
 if [ ! -f "$problem_summary" ]; then
 	echo "The problem summary table does not exist: $problem_summary" >&2
